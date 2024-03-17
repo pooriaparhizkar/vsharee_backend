@@ -5,8 +5,11 @@ import bodyParser from 'body-parser';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/user';
 import groupRoutes from './routes/group';
+import swaggerUi from 'swagger-ui-express';
+import specs from './swaggerConfig';
 
 const app = express();
+app.use('/swagger', swaggerUi.serve, swaggerUi.setup(specs));
 
 // Middleware
 app.use(cors());

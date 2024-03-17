@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User'; // Import your User model here
+import { UserType } from '../interface';
 
 const router = express.Router();
 
@@ -38,26 +39,28 @@ router.post('/register', async (req, res) => {
 // Login Route
 router.post('/login', async (req, res) => {
     const { username, password } = req.body;
+    console.log({ username, password })
 
     try {
         // Check if the user exists
         const user = await User.findOne({ username });
 
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ status: 404, message: 'User not found' });
         }
 
         // Compare passwords
         const isPasswordValid = await bcrypt.compare(password, user.password);
 
         if (!isPasswordValid) {
-            return res.status(401).json({ message: 'Invalid credentials' });
+            return res.status(401).json({ status: 404, message: 'Invalid credentials' });
         }
 
         // Generate JWT token
-        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET ?? "", { expiresIn: '1h' });
+        const access_token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET ?? "", { expiresIn: '48h' });
 
-        res.status(200).json({ token });
+        const modifiedUser: UserType = { username: user.username, _id: user._id.toString() };
+        res.status(200).json({ status: 200, data: { access_token, user: modifiedUser } });
     } catch (error) {
         res.status(500).json({ message: 'Internal Server Error' });
     }

@@ -4,6 +4,7 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/user';
+import groupRoutes from './routes/group';
 
 const app = express();
 
@@ -24,6 +25,7 @@ mongoose.connect(process.env.MONGODB_URI ?? "")
 // app.use('/api/users', require('./routes/users'));
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/group', groupRoutes);
 
 const PORT = process.env.PORT || 8000;
 

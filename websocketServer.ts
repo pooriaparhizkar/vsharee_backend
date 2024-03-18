@@ -7,6 +7,7 @@ interface WebSocketConnection {
     ws: WebSocket;
     userId: string;
     groupId: string;
+    pingInterval: NodeJS.Timeout; // Store the ping interval for each connection
 }
 
 const connections: WebSocketConnection[] = [];
@@ -44,27 +45,53 @@ export function initializeWebSocketServer(server: any) {
                     ws.close(401, 'You are not part of this group');
                     return;
                 }
-                connections.push({ ws, userId: decoded.userId, groupId })
+
+                // Set up ping-pong mechanism
+                const pingInterval = setInterval(() => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.ping(); // Send ping message to the client
+                    } else {
+                        clearInterval(pingInterval); // Clear interval if connection is closed
+                    }
+                }, 30000); // Send ping every 30 seconds
+
+                // Store the connection information
+                connections.push({ ws, userId: decoded.userId, groupId, pingInterval });
 
                 ws.on('message', function incoming(message) {
                     // Convert message to string if it's not already
                     const stringMessage = typeof message !== 'string' ? message.toString() : message;
 
+                    console.log(JSON.parse(stringMessage).type);
+                    if (JSON.parse(stringMessage).type === 'heartbeat') {
+                        ws.send(JSON.stringify({
+                            type: "heartbeat",
+                        }))
+                        return;
+                    }
+
                     // Find all WebSocket connections that belong to other members of the group
-                    wss.clients.forEach(function each(client) {
-                        if (client !== ws && client.readyState === WebSocket.OPEN) {
-                            connections.filter(connection => connection.groupId === groupId).map(
-                                connection => connection.ws.send(JSON.stringify({
+                    connections.filter(connection => connection.groupId === groupId).forEach(
+                        connection => {
+                            if (connection.ws.readyState === WebSocket.OPEN) {
+                                connection.ws.send(JSON.stringify({
                                     sender: sender,
                                     content: stringMessage
-                                })))
-
+                                }));
+                            }
                         }
-                    });
+                    );
                 });
 
                 ws.on('close', function close() {
                     console.log('Client disconnected from WebSocket');
+                    // Clear the ping interval when connection is closed
+                    clearInterval(pingInterval);
+                    // Remove the connection from the connections array
+                    const index = connections.findIndex(conn => conn.ws === ws);
+                    if (index !== -1) {
+                        connections.splice(index, 1);
+                    }
                 });
             }).catch((error) => {
                 console.error('Error fetching user:', error);

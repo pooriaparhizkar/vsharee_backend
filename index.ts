@@ -11,6 +11,9 @@ import swaggerUi from 'swagger-ui-express';
 import specs from './swaggerConfig';
 import http from 'http'; // Import http module for WebSocket
 import WebSocket from 'ws'; // Import WebSocket module
+import jwt from 'jsonwebtoken';
+import User from './models/User';
+import { initializeWebSocketServer } from './websocketServer';
 
 const app = express();
 app.use('/swagger', swaggerUi.serve, swaggerUi.setup(specs));
@@ -35,31 +38,8 @@ const PORT = process.env.PORT || 8000;
 // Create HTTP server
 const server = http.createServer(app);
 
-// Create WebSocket server and attach it to HTTP server
-const wss = new WebSocket.Server({ server });
-
-// WebSocket connection event handler
-wss.on('connection', function connection(ws) {
-
-    // WebSocket message event handler
-    ws.on('message', function incoming(message) {
-
-        // Convert message to string if it's not already
-        const stringMessage = typeof message !== 'string' ? message.toString() : message;
-
-        // Broadcast message to all connected WebSocket clients
-        wss.clients.forEach(function each(client) {
-            if (client !== ws && client.readyState === WebSocket.OPEN) {
-                client.send(stringMessage);
-            }
-        });
-    });
-
-    // WebSocket close event handler
-    ws.on('close', function close() {
-        console.log('Client disconnected from WebSocket');
-    });
-});
+// Initialize WebSocket server
+initializeWebSocketServer(server);
 
 
 

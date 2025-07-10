@@ -27,7 +27,7 @@
  *                 example: secret123
  *               name:
  *                 type: string
- *                 example: Pouria
+ *                 example: Pooria
  *     responses:
  *       200:
  *         description: Successful signup

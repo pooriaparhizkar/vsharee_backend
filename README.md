@@ -107,7 +107,7 @@ vsharee-backend/
 │   ├── routes/
 │   ├── middlewares/
 │   ├── config/
-│   └── index.js
+│   └── index.ts
 ├── prisma/
 │   └── schema.prisma
 ├── .env.example
@@ -127,7 +127,7 @@ Pull requests are welcome! If you’d like to suggest a feature or report a bug,
 
 ## 👨‍💻 Author
 
-**Pouria Parhizkar**  
+**Pooria Parhizkar**  
 Frontend Dev turned Fullstack 💥
 
 ---

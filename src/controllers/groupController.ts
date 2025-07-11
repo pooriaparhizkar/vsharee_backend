@@ -15,7 +15,7 @@ export const createGroup = async (req: AuthenticatedRequest<CreateGroupBody>, re
     try {
         const group = await prisma.group.create({
             data: {
-                id,
+                id: id.toLocaleLowerCase(),
                 name,
                 description: description ?? '',
                 creatorId,
@@ -48,4 +48,14 @@ export const myGroups = async (req: AuthenticatedRequest, res: Response) => {
     });
 
     return res.json(output);
+};
+
+export const verifyGroupId = async (req: AuthenticatedRequest<{ id: string }>, res: Response) => {
+    const group = await prisma.group.findUnique({ where: { id: req.body?.id.toLowerCase() } });
+    if (!group) {
+        res.json({ message: 'ID is free' });
+        return;
+    }
+
+    res.status(400).json({ message: 'ID is not free' });
 };

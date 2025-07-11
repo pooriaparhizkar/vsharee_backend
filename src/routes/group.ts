@@ -6,8 +6,9 @@
  */
 
 import express from 'express';
-import { createGroup, myGroups } from '../controllers';
+import { createGroup, myGroups, verifyGroupId } from '../controllers';
 import { authenticate } from '../middlewares/auth';
+import { verify } from 'crypto';
 
 const groupRoute = express.Router();
 
@@ -80,5 +81,29 @@ groupRoute.post('/', authenticate, createGroup);
  *         description: Unauthorized
  */
 groupRoute.get('/mine', authenticate, myGroups);
+
+/**
+ * @swagger
+ * /api/group/verify-id:
+ *   post:
+ *     summary: Verify if a group ID is available
+ *     tags: [Group]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: string
+ *                 example: group123
+ *     responses:
+ *       200:
+ *         description: ID is free
+ *       400:
+ *         description: ID is not free
+ */
+groupRoute.post('/verify-id', authenticate, verifyGroupId);
 
 export default groupRoute;

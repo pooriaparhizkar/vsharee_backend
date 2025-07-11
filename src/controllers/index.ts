@@ -1,5 +1,5 @@
 import { login, signup } from './authController';
-import { createGroup, myGroups } from './groupController';
+import { createGroup, myGroups, verifyGroupId } from './groupController';
 import { myProfile } from './profileController';
 
-export { myProfile, signup, login, createGroup, myGroups };
+export { myProfile, signup, login, createGroup, myGroups, verifyGroupId };

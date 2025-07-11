@@ -28,3 +28,24 @@ export const createGroup = async (req: AuthenticatedRequest<CreateGroupBody>, re
         return res.status(500).json({ message: 'Internal server error' });
     }
 };
+
+export const myGroups = async (req: AuthenticatedRequest, res: Response) => {
+    const userId = req.user?.userId;
+    const myGroups = await prisma.group.findMany({
+        where: { creatorId: userId },
+        include: {
+            creator: true,
+            members: {
+                include: {
+                    user: true, // ✅ include user info for each member
+                },
+            },
+        },
+    });
+    const output = myGroups.map((group: any) => {
+        const { creatorId, ...rest } = group;
+        return rest;
+    });
+
+    return res.json(output);
+};

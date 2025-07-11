@@ -5,6 +5,12 @@
  *   description: Group Management
  */
 
+import express from 'express';
+import { createGroup, myGroups } from '../controllers';
+import { authenticate } from '../middlewares/auth';
+
+const groupRoute = express.Router();
+
 /**
  * @swagger
  * /api/group:
@@ -50,12 +56,29 @@
  *       500:
  *         description: Internal server error
  */
-
-import express from 'express';
-import { createGroup } from '../controllers';
-import { authenticate } from '../middlewares/auth';
-
-const groupRoute = express.Router();
 groupRoute.post('/', authenticate, createGroup);
+
+/**
+ * @swagger
+ * /api/group/mine:
+ *   get:
+ *     summary: Get all groups created by the authenticated user
+ *     tags:
+ *       - Group
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of user's groups
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Group'
+ *       401:
+ *         description: Unauthorized
+ */
+groupRoute.get('/mine', authenticate, myGroups);
 
 export default groupRoute;

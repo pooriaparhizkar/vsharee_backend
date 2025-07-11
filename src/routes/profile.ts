@@ -17,8 +17,8 @@
  */
 
 import express from 'express';
-import { myProfile } from '../controllers/index.js';
-import { authenticate } from '../middlewares/auth.js';
+import { myProfile } from '../controllers';
+import { authenticate } from '../middlewares/auth';
 
 const profileRoutes = express.Router();
 profileRoutes.post('/mine', authenticate, myProfile);

@@ -57,7 +57,7 @@
  */
 
 import express from 'express';
-import { signup, login } from '../controllers/index.js';
+import { signup, login } from '../controllers';
 
 const authRoutes = express.Router();
 authRoutes.post('/signup', signup);

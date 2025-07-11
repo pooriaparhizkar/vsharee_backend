@@ -52,8 +52,8 @@
  */
 
 import express from 'express';
-import { createGroup } from '../controllers/index.js';
-import { authenticate } from '../middlewares/auth.js';
+import { createGroup } from '../controllers';
+import { authenticate } from '../middlewares/auth';
 
 const groupRoute = express.Router();
 groupRoute.post('/', authenticate, createGroup);

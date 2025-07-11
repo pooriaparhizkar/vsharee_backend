@@ -1,5 +1,5 @@
-import authRoutes from './auth.js';
-import groupRoutes from './group.js';
-import profileRoutes from './profile.js';
+import authRoutes from './auth';
+import groupRoutes from './group';
+import profileRoutes from './profile';
 
 export { authRoutes, profileRoutes, groupRoutes };

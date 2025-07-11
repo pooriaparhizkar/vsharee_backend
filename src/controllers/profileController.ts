@@ -1,6 +1,4 @@
-import { JwtPayload } from 'jsonwebtoken';
-import { Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
+import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthenticatedRequest } from '../interfaces';
 

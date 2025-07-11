@@ -1,10 +1,10 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { AuthenticatedRequest, CreateGroupBody } from '../interfaces/index.js';
+import { AuthenticatedRequest, CreateGroupBody } from '../interfaces';
 
 const prisma = new PrismaClient();
 
-export const createGroup = async (req: AuthenticatedRequest<any>, res: Response) => {
+export const createGroup = async (req: AuthenticatedRequest<CreateGroupBody>, res: Response) => {
     const { id, name, description } = req.body;
     const creatorId = req.user?.userId;
 
@@ -17,7 +17,7 @@ export const createGroup = async (req: AuthenticatedRequest<any>, res: Response)
             data: {
                 id,
                 name,
-                description,
+                description: description ?? '',
                 creatorId,
             },
         });

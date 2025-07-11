@@ -20,20 +20,32 @@ export const myProfile = async (req: AuthenticatedRequest, res: Response): Promi
 
 export const searchUsers = async (req: AuthenticatedRequest, res: Response) => {
     const name = req.query.name?.toString().trim().toLowerCase();
-    const page = parseInt(req.query.page as string) || 1;
-    const pageSize = parseInt(req.query.pageSize as string) || 10;
 
     if (!name) {
         return res.status(400).json({ message: 'Name query is required' });
     }
 
+    // Optional pagination parameters
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.pageSize as string) || 10;
+
     try {
         const users = await prisma.user.findMany({
             where: {
-                name: {
-                    contains: name,
-                    mode: 'insensitive',
-                },
+                OR: [
+                    {
+                        name: {
+                            contains: name,
+                            mode: 'insensitive',
+                        },
+                    },
+                    {
+                        email: {
+                            contains: name,
+                            mode: 'insensitive',
+                        },
+                    },
+                ],
             },
             select: {
                 id: true,

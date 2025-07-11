@@ -35,7 +35,7 @@ profileRoutes.post('/mine', authenticate, myProfile);
  *         schema:
  *           type: string
  *         required: true
- *         description: Name to search for
+ *         description: Partial name or email to search for
  *       - in: query
  *         name: page
  *         schema:

@@ -3,7 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './config/swagger.js';
-import { authRoutes, profileRoutes } from './routes/index.js';
+import { authRoutes, groupRoutes, profileRoutes } from './routes/index.js';
 
 dotenv.config();
 
@@ -16,9 +16,10 @@ app.use(
     }),
 );
 app.use(express.json());
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/api/group', groupRoutes);
 
 app.get('/', (req, res) => {
     res.send('vSharee backend is running!');

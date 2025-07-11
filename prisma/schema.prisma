@@ -7,25 +7,34 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String
-  createdAt DateTime @default(now())
+  id            String         @id @default(uuid())
+  email         String         @unique
+  password      String
+  name          String
+  createdAt     DateTime       @default(now())
 
-  // Self relation (friendship)
-  friends  User[] @relation("UserFriends")
-  friendOf User[] @relation("UserFriends")
-
-  // Group relation
-  groups Group[] @relation("GroupMembers")
+  createdGroups Group[]        @relation("CreatedGroups")
+  memberships   GroupMember[]
 }
 
 model Group {
-  id        String   @id @default(uuid())
-  name      String
-  members   User[]   @relation("GroupMembers")
-  createdAt DateTime @default(now())
+  id          String         @id @default(uuid())
+  name        String
+  description String
+  createdAt   DateTime       @default(now())
+  creatorId   String
+  creator     User           @relation("CreatedGroups", fields: [creatorId], references: [id])
+
+  members     GroupMember[]
+}
+
+model GroupMember {
+  userId  String
+  groupId String
+
+  user    User   @relation(fields: [userId], references: [id])
+  group   Group  @relation(fields: [groupId], references: [id])
+
+  @@id([userId, groupId])
 }

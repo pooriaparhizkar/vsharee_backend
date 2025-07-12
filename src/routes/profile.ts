@@ -14,14 +14,14 @@ const profileRoutes = express.Router();
 /**
  * @swagger
  * /api/profile/mine:
- *   post:
+ *   get:
  *     summary: return User Profile
  *     tags: [Profile]
  *     responses:
  *       200:
  *         description: Returns User Profile
  */
-profileRoutes.post('/mine', authenticate, myProfile);
+profileRoutes.get('/mine', authenticate, myProfile);
 
 /**
  * @swagger

@@ -19,6 +19,11 @@ export const createGroup = async (req: AuthenticatedRequest<CreateGroupBody>, re
                 name,
                 description: description ?? '',
                 creatorId,
+                members: {
+                    connect: {
+                        id: creatorId,
+                    },
+                },
             },
         });
 
@@ -35,11 +40,7 @@ export const myGroups = async (req: AuthenticatedRequest, res: Response) => {
         where: { creatorId: userId },
         include: {
             creator: true,
-            members: {
-                include: {
-                    user: true, // ✅ include user info for each member
-                },
-            },
+            members: true, // ✅ this is enough — members ARE users
         },
     });
     const output = myGroups.map((group: any) => {

@@ -7,7 +7,7 @@ import { LoginBody, SignupBody } from '../interfaces';
 const prisma = new PrismaClient();
 
 export const signup = async (req: Request<{}, {}, SignupBody>, res: Response): Promise<void> => {
-    const { email, password, name } = req.body;
+    const { email, name } = req.body;
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -15,13 +15,21 @@ export const signup = async (req: Request<{}, {}, SignupBody>, res: Response): P
         return;
     }
 
-    const hashed = await bcrypt.hash(password, 10);
+    const hashed = await bcrypt.hash(req.body.password, 10);
     const user = await prisma.user.create({
         data: { email, password: hashed, name },
     });
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET as string);
-    res.json({ token });
+
+    const { password, ...userWithoutPassword } = user;
+    res.json({
+        token,
+        user: {
+            ...userWithoutPassword,
+            groups: [],
+        },
+    });
 };
 
 export const login = async (req: Request<{}, {}, LoginBody>, res: Response): Promise<void> => {

@@ -14,3 +14,10 @@ export interface __CreateGroupBody {
     name: string;
     description?: string;
 }
+
+export interface __UpdateGroupBody {
+    id: string;
+    name?: string;
+    description?: string;
+    members?: string[];
+}

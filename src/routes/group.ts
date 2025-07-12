@@ -6,7 +6,7 @@
  */
 
 import express from 'express';
-import { createGroup, myGroups, updateGroup, verifyGroupId } from '../controllers';
+import { createGroup, deleteGroup, myGroups, updateGroup, verifyGroupId } from '../controllers';
 import { authenticate } from '../middlewares/auth';
 import { verify } from 'crypto';
 
@@ -149,5 +149,30 @@ groupRoute.post('/verify-id', authenticate, verifyGroupId);
  *         description: Internal server error
  */
 groupRoute.put('/:id', authenticate, updateGroup);
+
+/**
+ * @swagger
+ * /api/group/{id}:
+ *   delete:
+ *     summary: Delete a group by ID (creator only)
+ *     tags: [Group]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the group to delete
+ *     responses:
+ *       200:
+ *         description: Group deleted successfully
+ *       400:
+ *         description: Missing group ID or unauthorized
+ *       403:
+ *         description: Not authorized to delete this group
+ */
+groupRoute.delete('/:id', authenticate, deleteGroup);
 
 export default groupRoute;

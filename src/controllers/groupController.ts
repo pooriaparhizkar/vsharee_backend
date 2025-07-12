@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { AuthenticatedRequest, CreateGroupBody } from '../interfaces';
+import { AuthenticatedRequest, CreateGroupBody, UpdateGroupBody } from '../interfaces';
 
 const prisma = new PrismaClient();
 
@@ -77,7 +77,7 @@ export const verifyGroupId = async (req: AuthenticatedRequest<{ id: string }>, r
     res.status(400).json({ message: 'ID is not free' });
 };
 
-export const updateGroup = async (req: AuthenticatedRequest, res: Response) => {
+export const updateGroup = async (req: AuthenticatedRequest<UpdateGroupBody>, res: Response) => {
     const creatorId = req.user?.userId;
     const currentGroupId = req.params.id?.toLowerCase();
     // id in body is the new id to update to
@@ -135,6 +135,32 @@ export const updateGroup = async (req: AuthenticatedRequest, res: Response) => {
         });
 
         return res.status(200).json(updatedGroup);
+    } catch (error) {
+        console.error('[Update Group]', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+export const deleteGroup = async (req: AuthenticatedRequest, res: Response) => {
+    const creatorId = req.user?.userId;
+    const groupId = req.params.id?.toLowerCase();
+    if (!groupId || !creatorId) {
+        return res.status(400).json({ message: 'Missing group ID or unauthorized' });
+    }
+    try {
+        const group = await prisma.group.findUnique({
+            where: { id: groupId },
+        });
+
+        if (!group || group.creatorId !== creatorId) {
+            return res.status(403).json({ message: 'Not authorized to update this group' });
+        }
+
+        await prisma.group.delete({
+            where: { id: groupId },
+        });
+
+        return res.status(200).json({ message: 'Group deleted successfully' });
     } catch (error) {
         console.error('[Update Group]', error);
         return res.status(500).json({ message: 'Internal server error' });

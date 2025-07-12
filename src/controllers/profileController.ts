@@ -9,11 +9,8 @@ export const myProfile = async (req: AuthenticatedRequest, res: Response): Promi
     try {
         const user = await prisma.user.findUnique({
             where: { id: req.user?.userId },
-            include: {
-                createdGroups: true,
-            },
         });
-        const memberGroups = await prisma.group.findMany({
+        const groups = await prisma.group.findMany({
             where: {
                 members: {
                     some: { id: req.user?.userId },
@@ -29,7 +26,7 @@ export const myProfile = async (req: AuthenticatedRequest, res: Response): Promi
         res.json({
             user: {
                 ...userWithoutPassword,
-                memberGroups,
+                groups,
             },
         });
     } catch (error) {
@@ -98,11 +95,8 @@ export const profileDetail = async (req: AuthenticatedRequest, res: Response): P
     try {
         const user = await prisma.user.findUnique({
             where: { id: userId },
-            include: {
-                createdGroups: true,
-            },
         });
-        const memberGroups = await prisma.group.findMany({
+        const groups = await prisma.group.findMany({
             where: {
                 members: {
                     some: { id: userId },
@@ -118,7 +112,7 @@ export const profileDetail = async (req: AuthenticatedRequest, res: Response): P
 
         res.status(200).json({
             ...userWithoutPassword,
-            memberGroups,
+            groups,
         });
     } catch (error) {
         console.error('[Profile Detail]', error);

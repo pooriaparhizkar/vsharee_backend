@@ -25,19 +25,35 @@ export const signup = async (req: Request<{}, {}, SignupBody>, res: Response): P
 };
 
 export const login = async (req: Request<{}, {}, LoginBody>, res: Response): Promise<void> => {
-    const { email, password } = req.body;
-    const user = await prisma.user.findUnique({ where: { email } });
+    const { email } = req.body;
+    const user = await prisma.user.findUnique({
+        where: { email },
+    });
     if (!user) {
         res.status(400).json({ message: 'Invalid credentials' });
         return;
     }
 
-    const valid = await bcrypt.compare(password, user.password);
+    const valid = await bcrypt.compare(req.body.password, user.password);
     if (!valid) {
         res.status(400).json({ message: 'Invalid credentials' });
         return;
     }
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET as string);
-    res.json({ token });
+    const groups = await prisma.group.findMany({
+        where: {
+            members: {
+                some: { id: user.id },
+            },
+        },
+    });
+    const { password, ...userWithoutPassword } = user;
+    res.json({
+        token,
+        user: {
+            ...userWithoutPassword,
+            groups,
+        },
+    });
 };

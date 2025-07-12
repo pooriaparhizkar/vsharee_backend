@@ -1,33 +1,5 @@
 /**
  * @swagger
- * components:
- *   schemas:
- *     GroupMessage:
- *       type: object
- *       properties:
- *         id:
- *           type: string
- *           format: uuid
- *           example: "d290f1ee-6c54-4b01-90e6-d701748f0851"
- *         text:
- *           type: string
- *           example: "Hello group!"
- *         sender:
- *           type: object
- *           properties:
- *             id:
- *               type: string
- *               example: "user-uuid-1234"
- *             name:
- *               type: string
- *               example: "Alice"
- *         createdAt:
- *           type: string
- *           format: date-time
- *           example: "2025-07-13T12:34:56Z"
- */
-/**
- * @swagger
  * tags:
  *   name: Group
  *   description: Group Management
@@ -36,7 +8,6 @@
 import express from 'express';
 import { createGroup, deleteGroup, getGroupMessages, myGroups, updateGroup, verifyGroupId } from '../controllers';
 import { authenticate } from '../middlewares/auth';
-import { verify } from 'crypto';
 
 const groupRoute = express.Router();
 
@@ -89,26 +60,65 @@ groupRoute.post('/', authenticate, createGroup);
 
 /**
  * @swagger
- * /api/group/mine:
+ * /api/group/mine/{page}/{pageSize}:
  *   get:
- *     summary: Get all groups created by the authenticated user
+ *     summary: Get all groups joined by the authenticated user (paginated)
  *     tags:
  *       - Group
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: page
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: path
+ *         name: pageSize
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *         description: Number of groups per page
  *     responses:
  *       200:
- *         description: List of user's groups
+ *         description: Paginated list of user's groups
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Group'
+ *               type: object
+ *               properties:
+ *                 page:
+ *                   type: integer
+ *                   example: 1
+ *                 pageSize:
+ *                   type: integer
+ *                   example: 20
+ *                 totalPages:
+ *                   type: integer
+ *                   example: 2
+ *                 totalCount:
+ *                   type: integer
+ *                   example: 40
+ *                 hasPreviousPage:
+ *                   type: boolean
+ *                   example: false
+ *                 hasNextPage:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Group'
  *       401:
  *         description: Unauthorized
  */
-groupRoute.get('/mine', authenticate, myGroups);
+groupRoute.get('/mine/:page/:pageSize', authenticate, myGroups);
 
 /**
  * @swagger
@@ -205,7 +215,7 @@ groupRoute.delete('/:id', authenticate, deleteGroup);
 
 /**
  * @swagger
- * /api/group/{groupId}/messages:
+ * /api/group/{id}/messages/{page}/{pageSize}:
  *   get:
  *     summary: Get paginated messages of a group
  *     tags: [Group]
@@ -213,20 +223,22 @@ groupRoute.delete('/:id', authenticate, deleteGroup);
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: groupId
+ *         name: id
  *         required: true
  *         schema:
  *           type: string
  *         description: ID of the group to fetch messages from
- *       - in: query
+ *       - in: path
  *         name: page
+ *         required: true
  *         schema:
  *           type: integer
  *           minimum: 1
  *           default: 1
  *         description: Page number for pagination
- *       - in: query
+ *       - in: path
  *         name: pageSize
+ *         required: true
  *         schema:
  *           type: integer
  *           minimum: 1
@@ -262,11 +274,31 @@ groupRoute.delete('/:id', authenticate, deleteGroup);
  *                 data:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/GroupMessage'
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         example: "uuid-message-id"
+ *                       text:
+ *                         type: string
+ *                         example: "Hello group!"
+ *                       sender:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             example: "user-id-123"
+ *                           name:
+ *                             type: string
+ *                             example: "Alice"
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                         example: "2025-07-13T12:34:56Z"
  *       400:
- *         description: Missing groupId parameter
+ *         description: Missing or invalid parameters
  *       500:
  *         description: Internal server error
  */
-groupRoute.get('/:groupId/messages', authenticate, getGroupMessages);
+groupRoute.get('/:id/messages/:page/:pageSize', authenticate, getGroupMessages);
 export default groupRoute;

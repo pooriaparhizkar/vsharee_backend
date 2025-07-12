@@ -37,35 +37,66 @@ export const createGroup = async (req: AuthenticatedRequest<CreateGroupBody>, re
 
 export const myGroups = async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user?.userId;
-    const myGroups = await prisma.group.findMany({
-        where: {
-            members: {
-                some: {
-                    id: userId,
+    const page = parseInt(req.params.page, 10);
+    const pageSize = parseInt(req.params.pageSize, 10);
+
+    if (!userId) {
+        return res.status(400).json({ message: 'Missing user ID' });
+    }
+
+    if (isNaN(page) || page < 1) {
+        return res.status(400).json({ message: 'Invalid page parameter' });
+    }
+    if (isNaN(pageSize) || pageSize < 1 || pageSize > 100) {
+        return res.status(400).json({ message: 'Invalid pageSize parameter' });
+    }
+
+    const result = await paginate(
+        { page, pageSize },
+        () =>
+            prisma.group.count({
+                where: {
+                    members: {
+                        some: {
+                            id: userId,
+                        },
+                    },
                 },
-            },
-        },
-        include: {
-            creator: {
-                select: {
-                    id: true,
-                    name: true,
+            }),
+        (skip, take) =>
+            prisma.group.findMany({
+                where: {
+                    members: {
+                        some: {
+                            id: userId,
+                        },
+                    },
                 },
-            },
-            members: {
-                select: {
-                    id: true,
-                    name: true,
+                include: {
+                    creator: {
+                        select: {
+                            id: true,
+                            name: true,
+                        },
+                    },
+                    members: {
+                        select: {
+                            id: true,
+                            name: true,
+                        },
+                    },
                 },
-            },
-        },
-    });
-    const output = myGroups.map((group: any) => {
+                skip,
+                take,
+            }),
+    );
+
+    result.data = result.data.map((group: any) => {
         const { creatorId, ...rest } = group;
         return rest;
     });
 
-    return res.json(output);
+    return res.json(result);
 };
 
 export const verifyGroupId = async (req: AuthenticatedRequest<{ id: string }>, res: Response) => {
@@ -170,13 +201,22 @@ export const deleteGroup = async (req: AuthenticatedRequest, res: Response) => {
 
 export const getGroupMessages = async (req: AuthenticatedRequest, res: Response) => {
     try {
-        const groupId = req.params.groupId;
+        const groupId = req.params.id;
+        const page = parseInt(req.params.page, 10);
+        const pageSize = parseInt(req.params.pageSize, 10);
+
         if (!groupId) {
             return res.status(400).json({ message: 'Missing groupId parameter' });
         }
-
+        if (isNaN(page) || page < 1) {
+            return res.status(400).json({ message: 'Invalid page parameter' });
+        }
+        if (isNaN(pageSize) || pageSize < 1 || pageSize > 100) {
+            return res.status(400).json({ message: 'Invalid pageSize parameter' });
+        }
+        console.log({ page, pageSize });
         const result = await paginate(
-            req.query,
+            { page, pageSize },
             () => prisma.groupMessage.count({ where: { groupId } }),
             (skip, take) =>
                 prisma.groupMessage.findMany({

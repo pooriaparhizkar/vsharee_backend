@@ -39,14 +39,24 @@ export const myProfile = async (req: AuthenticatedRequest, res: Response): Promi
 
 export const searchUsers = async (req: AuthenticatedRequest, res: Response) => {
     const name = req.query.name?.toString().trim().toLowerCase();
+    const page = parseInt(req.params.page, 10);
+    const pageSize = parseInt(req.params.pageSize, 10);
 
     if (!name) {
         return res.status(400).json({ message: 'Name query is required' });
     }
 
+    if (isNaN(page) || page < 1) {
+        return res.status(400).json({ message: 'Invalid page parameter' });
+    }
+
+    if (isNaN(pageSize) || pageSize < 1 || pageSize > 100) {
+        return res.status(400).json({ message: 'Invalid pageSize parameter' });
+    }
+
     try {
         const result = await paginate(
-            req.query,
+            { page, pageSize },
             () =>
                 prisma.user.count({
                     where: {

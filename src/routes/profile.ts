@@ -25,9 +25,9 @@ profileRoutes.get('/mine', authenticate, myProfile);
 
 /**
  * @swagger
- * /api/profile/search:
+ * /api/profile/search/{page}/{pageSize}:
  *   get:
- *     summary: Search for users by name
+ *     summary: Search for users by name or email
  *     tags: [Profile]
  *     parameters:
  *       - in: query
@@ -36,19 +36,22 @@ profileRoutes.get('/mine', authenticate, myProfile);
  *           type: string
  *         required: true
  *         description: Partial name or email to search for
- *       - in: query
+ *       - in: path
  *         name: page
  *         schema:
  *           type: integer
+ *           minimum: 1
  *           default: 1
- *         required: false
- *         description: Page number for pagination
- *       - in: query
+ *         required: true
+ *         description: Page number
+ *       - in: path
  *         name: pageSize
  *         schema:
  *           type: integer
+ *           minimum: 1
+ *           maximum: 100
  *           default: 10
- *         required: false
+ *         required: true
  *         description: Number of users per page
  *     responses:
  *       200:
@@ -56,22 +59,37 @@ profileRoutes.get('/mine', authenticate, myProfile);
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: string
- *                   name:
- *                     type: string
- *                   email:
- *                     type: string
+ *               type: object
+ *               properties:
+ *                 page:
+ *                   type: integer
+ *                 pageSize:
+ *                   type: integer
+ *                 totalPages:
+ *                   type: integer
+ *                 totalCount:
+ *                   type: integer
+ *                 hasPreviousPage:
+ *                   type: boolean
+ *                 hasNextPage:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       email:
+ *                         type: string
  *       400:
  *         description: Name query is required
  *       500:
  *         description: Internal server error
  */
-profileRoutes.get('/search', authenticate, searchUsers);
+profileRoutes.get('/search/:page/:pageSize', authenticate, searchUsers);
 
 /**
  * @swagger

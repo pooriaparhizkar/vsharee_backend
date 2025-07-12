@@ -20,3 +20,6 @@ yarn-error.log*
 
 # Docker
 **/data/*
+
+# Sample frontend test
+socket-test.html

@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthenticatedRequest, CreateGroupBody, UpdateGroupBody } from '../interfaces';
+import { paginate } from '../utils';
 
 const prisma = new PrismaClient();
 
@@ -164,5 +165,32 @@ export const deleteGroup = async (req: AuthenticatedRequest, res: Response) => {
     } catch (error) {
         console.error('[Update Group]', error);
         return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+export const getGroupMessages = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+        const groupId = req.params.groupId;
+        if (!groupId) {
+            return res.status(400).json({ message: 'Missing groupId parameter' });
+        }
+
+        const result = await paginate(
+            req.query,
+            () => prisma.groupMessage.count({ where: { groupId } }),
+            (skip, take) =>
+                prisma.groupMessage.findMany({
+                    where: { groupId },
+                    include: { sender: { select: { id: true, name: true } } },
+                    orderBy: { createdAt: 'asc' },
+                    skip,
+                    take,
+                }),
+        );
+
+        res.json(result);
+    } catch (error) {
+        console.error('[Get Group Messages]', error);
+        res.status(500).json({ message: 'Internal server error' });
     }
 };

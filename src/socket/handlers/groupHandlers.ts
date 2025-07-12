@@ -38,10 +38,17 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
         socket.to(groupId).emit('userJoined', { userId: user.id, name: user.name });
     });
 
-    socket.on('sendMessage', ({ groupId, message }) => {
+    socket.on('sendMessage', async ({ groupId, message }) => {
         io.to(groupId).emit('newMessage', {
             message,
             user: { id: user.id, name: user.name },
+        });
+        await prisma.groupMessage.create({
+            data: {
+                text: message,
+                senderId: user.id,
+                groupId,
+            },
         });
     });
 

@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthenticatedRequest } from '../interfaces';
+import { paginate } from '../utils';
 
 const prisma = new PrismaClient();
 
@@ -43,41 +44,36 @@ export const searchUsers = async (req: AuthenticatedRequest, res: Response) => {
         return res.status(400).json({ message: 'Name query is required' });
     }
 
-    // Optional pagination parameters
-    const page = parseInt(req.query.page as string) || 1;
-    const pageSize = parseInt(req.query.pageSize as string) || 10;
-
     try {
-        const users = await prisma.user.findMany({
-            where: {
-                OR: [
-                    {
-                        name: {
-                            contains: name,
-                            mode: 'insensitive',
-                        },
+        const result = await paginate(
+            req.query,
+            () =>
+                prisma.user.count({
+                    where: {
+                        OR: [
+                            { name: { contains: name, mode: 'insensitive' } },
+                            { email: { contains: name, mode: 'insensitive' } },
+                        ],
                     },
-                    {
-                        email: {
-                            contains: name,
-                            mode: 'insensitive',
-                        },
+                }),
+            (skip, take) =>
+                prisma.user.findMany({
+                    where: {
+                        OR: [
+                            { name: { contains: name, mode: 'insensitive' } },
+                            { email: { contains: name, mode: 'insensitive' } },
+                        ],
                     },
-                ],
-            },
-            select: {
-                id: true,
-                name: true,
-                email: true,
-            },
-            skip: (page - 1) * pageSize,
-            take: pageSize,
-        });
+                    select: { id: true, name: true, email: true },
+                    skip,
+                    take,
+                }),
+        );
 
-        return res.status(200).json(users);
+        res.status(200).json(result);
     } catch (error) {
         console.error('[Search Users]', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        res.status(500).json({ message: 'Internal server error' });
     }
 };
 

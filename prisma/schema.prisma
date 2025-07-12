@@ -7,24 +7,39 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
 model User {
-  id            String   @id @default(uuid())
-  email         String   @unique
+  id            String         @id @default(uuid())
+  email         String         @unique
   password      String
   name          String
-  createdAt     DateTime @default(now())
+  createdAt     DateTime       @default(now())
 
-  createdGroups Group[]  @relation("CreatedGroups")
-  memberGroups  Group[]  @relation("GroupMembers")
+  createdGroups Group[]        @relation("CreatedGroups")
+  memberGroups  Group[]        @relation("GroupMembers")
+
+  sentMessages  GroupMessage[] @relation("UserSentMessages")
 }
 
 model Group {
-  id          String   @id @default(uuid())
+  id          String         @id @default(uuid())
   name        String
   description String
-  createdAt   DateTime @default(now())
+  createdAt   DateTime       @default(now())
   creatorId   String
-  creator     User     @relation("CreatedGroups", fields: [creatorId], references: [id])
+  creator     User           @relation("CreatedGroups", fields: [creatorId], references: [id])
 
-  members     User[]   @relation("GroupMembers")
+  members     User[]         @relation("GroupMembers")
+
+  messages    GroupMessage[] @relation("GroupMessages")
+}
+
+model GroupMessage {
+  id        String   @id @default(uuid())
+  text      String
+  senderId  String
+  sender    User     @relation("UserSentMessages", fields: [senderId], references: [id])
+  groupId   String
+  group     Group    @relation("GroupMessages", fields: [groupId], references: [id])
+  createdAt DateTime @default(now())
 }

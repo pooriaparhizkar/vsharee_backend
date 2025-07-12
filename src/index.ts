@@ -28,4 +28,4 @@ app.get('/', (req, res) => res.send('vSharee backend is running!'));
 const server = createServer(app);
 setupSocket(server); // 👉 Socket.io initialized
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server listening on port 8000`));

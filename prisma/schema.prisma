@@ -15,7 +15,7 @@ model User {
   createdAt     DateTime @default(now())
 
   createdGroups Group[]  @relation("CreatedGroups")
-  memberGroups  Group[]  @relation("GroupMembers") // 👈 this is missing in your schema
+  memberGroups  Group[]  @relation("GroupMembers")
 }
 
 model Group {
@@ -26,5 +26,5 @@ model Group {
   creatorId   String
   creator     User     @relation("CreatedGroups", fields: [creatorId], references: [id])
 
-  members     User[]   @relation("GroupMembers") // 👈 give the same name
+  members     User[]   @relation("GroupMembers")
 }

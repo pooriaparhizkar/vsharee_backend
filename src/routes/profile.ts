@@ -6,7 +6,7 @@
  */
 
 import express from 'express';
-import { myProfile, searchUsers } from '../controllers';
+import { myProfile, profileDetail, searchUsers } from '../controllers';
 import { authenticate } from '../middlewares/auth';
 
 const profileRoutes = express.Router();
@@ -72,4 +72,45 @@ profileRoutes.get('/mine', authenticate, myProfile);
  *         description: Internal server error
  */
 profileRoutes.get('/search', authenticate, searchUsers);
+
+/**
+ * @swagger
+ * /api/profile/{id}:
+ *   get:
+ *     summary: Get user profile by ID
+ *     tags: [Profile]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The user ID
+ *     responses:
+ *       200:
+ *         description: Returns User Profile
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 name:
+ *                   type: string
+ *                 email:
+ *                   type: string
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *                 updatedAt:
+ *                   type: string
+ *                   format: date-time
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal server error
+ */
+profileRoutes.get('/:id', authenticate, profileDetail);
+
 export default profileRoutes;

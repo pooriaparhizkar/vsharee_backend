@@ -6,7 +6,7 @@
  */
 
 import express from 'express';
-import { createGroup, myGroups, verifyGroupId } from '../controllers';
+import { createGroup, myGroups, updateGroup, verifyGroupId } from '../controllers';
 import { authenticate } from '../middlewares/auth';
 import { verify } from 'crypto';
 
@@ -105,5 +105,49 @@ groupRoute.get('/mine', authenticate, myGroups);
  *         description: ID is not free
  */
 groupRoute.post('/verify-id', authenticate, verifyGroupId);
+
+/**
+ * @swagger
+ * /api/group/{id}:
+ *   put:
+ *     summary: Update a group by ID (creator only)
+ *     tags: [Group]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Current ID of the group to update
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: string
+ *                 description: New ID for the group
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               members:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       200:
+ *         description: Group updated successfully
+ *       400:
+ *         description: Bad request or duplicate ID
+ *       403:
+ *         description: Unauthorized to update group
+ *       500:
+ *         description: Internal server error
+ */
+groupRoute.put('/:id', authenticate, updateGroup);
 
 export default groupRoute;

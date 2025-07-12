@@ -11,7 +11,9 @@ Backend for **vSharee** – a platform to watch movies with friends in real-time
 - ✅ Prisma ORM for clean DB access
 - ✅ Swagger API docs for devs
 - ✅ Dockerized setup
-- ✅ Ready for group sync & chat with Socket.io (coming soon)
+- ✅ Paginated endpoints using URL parameters (e.g., `/messages/:page/:pageSize`)
+- ✅ User search by name/email with pagination
+- ✅ Group sync, chat, and real-time video control with Socket.io
 
 ---
 
@@ -58,7 +60,7 @@ Visit:
 - **Prisma** – Type-safe ORM
 - **JWT** – Secure authentication
 - **Docker** – Containerized environment
-- **Socket.io** – Real-time sync (coming soon)
+- **Socket.io** – Real-time communication (group sync, chat, video control)
 
 ---
 
@@ -84,14 +86,22 @@ Studio (DB UI):
 npx prisma studio
 ```
 
+### Pagination Routes
+
+Several endpoints now support pagination using route parameters:
+
+- `/api/group/{groupId}/messages/{page}/{pageSize}`
+- `/api/group/mine/{page}/{pageSize}`
+- `/api/profile/search/{page}/{pageSize}?name=someText`
+
 ---
 
 ## 🧾 Environment Variables
 
-| Key          | Description                   |
-|--------------|-------------------------------|
-| `PORT`       | Port the server runs on        |
-| `JWT_SECRET` | Secret key for JWT             |
+| Key            | Description                 |
+| -------------- | --------------------------- |
+| `PORT`         | Port the server runs on     |
+| `JWT_SECRET`   | Secret key for JWT          |
 | `DATABASE_URL` | Prisma DB connection string |
 
 See `.env.example` for the format.
@@ -135,3 +145,13 @@ Frontend Dev turned Fullstack 💥
 ## 📜 License
 
 MIT License
+
+## 📡 WebSocket Events
+
+Socket.io is used for real-time interaction inside groups:
+
+- `joinGroup` — User joins a group room. Emits `joinedGroup` with online members.
+- `sendMessage` — Sends a group chat message. Emits `newMessage` to group.
+- `videoControl` — Broadcasts video actions like play, pause, or seek. Emits `syncVideo`.
+- `disconnect` — Notifies other users when someone leaves a group. Emits `userLeft`.
+- `userJoined` — Broadcast when a new member joins the group.

@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthenticatedRequest } from '../interfaces';
 import { paginate } from '../utils';
+import { createResponse } from '../utils';
 
 const prisma = new PrismaClient();
 
@@ -19,18 +20,23 @@ export const myProfile = async (req: AuthenticatedRequest, res: Response): Promi
         });
 
         if (!user) {
-            res.status(404).json({ message: 'User not found22222' });
+            res.status(404).json(createResponse(null, 404, 'User not found22222'));
             return;
         }
         const { password, ...userWithoutPassword } = user;
-        res.json({
-            user: {
-                ...userWithoutPassword,
-                groups,
-            },
-        });
+        res.json(
+            createResponse(
+                {
+                    user: {
+                        ...userWithoutPassword,
+                        groups,
+                    },
+                },
+                200,
+            ),
+        );
     } catch (error) {
-        res.status(401).json({ message: 'Invalid token' });
+        res.status(401).json(createResponse(null, 401, 'Invalid token'));
     }
 };
 
@@ -40,15 +46,15 @@ export const searchUsers = async (req: AuthenticatedRequest, res: Response) => {
     const pageSize = parseInt(req.params.pageSize, 10);
 
     if (!name) {
-        return res.status(400).json({ message: 'Name query is required' });
+        return res.status(400).json(createResponse(null, 400, 'Name query is required'));
     }
 
     if (isNaN(page) || page < 1) {
-        return res.status(400).json({ message: 'Invalid page parameter' });
+        return res.status(400).json(createResponse(null, 400, 'Invalid page parameter'));
     }
 
     if (isNaN(pageSize) || pageSize < 1 || pageSize > 100) {
-        return res.status(400).json({ message: 'Invalid pageSize parameter' });
+        return res.status(400).json(createResponse(null, 400, 'Invalid pageSize parameter'));
     }
 
     try {
@@ -77,10 +83,10 @@ export const searchUsers = async (req: AuthenticatedRequest, res: Response) => {
                 }),
         );
 
-        res.status(200).json(result);
+        res.status(200).json(createResponse(result, 200));
     } catch (error) {
         console.error('[Search Users]', error);
-        res.status(500).json({ message: 'Internal server error' });
+        res.status(500).json(createResponse(null, 500, 'Internal server error'));
     }
 };
 
@@ -88,7 +94,7 @@ export const profileDetail = async (req: AuthenticatedRequest, res: Response): P
     const userId = req.params.id;
 
     if (!userId) {
-        res.status(400).json({ message: 'User ID is required' });
+        res.status(400).json(createResponse(null, 400, 'User ID is required'));
         return;
     }
 
@@ -105,17 +111,22 @@ export const profileDetail = async (req: AuthenticatedRequest, res: Response): P
         });
 
         if (!user) {
-            res.status(404).json({ message: 'User not found' });
+            res.status(404).json(createResponse(null, 404, 'User not found'));
             return;
         }
         const { password, ...userWithoutPassword } = user;
 
-        res.status(200).json({
-            ...userWithoutPassword,
-            groups,
-        });
+        res.status(200).json(
+            createResponse(
+                {
+                    ...userWithoutPassword,
+                    groups,
+                },
+                200,
+            ),
+        );
     } catch (error) {
         console.error('[Profile Detail]', error);
-        res.status(500).json({ message: 'Internal server error' });
+        res.status(500).json(createResponse(null, 500, 'Internal server error'));
     }
 };

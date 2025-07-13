@@ -17,3 +17,11 @@ export interface __PaginationResult<T> {
     hasNextPage: boolean;
     data: T[];
 }
+
+export interface __Response<T> {
+    value: T;
+    status: number;
+    isSuccess?: boolean;
+    message?: string;
+    errors?: any;
+}

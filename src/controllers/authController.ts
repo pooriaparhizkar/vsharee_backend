@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import { LoginBody, SignupBody } from '../interfaces';
+import { createResponse } from '../utils';
 
 const prisma = new PrismaClient();
 
@@ -11,7 +12,7 @@ export const signup = async (req: Request<{}, {}, SignupBody>, res: Response): P
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
-        res.status(400).json({ message: 'Email exists' });
+        res.status(400).json(createResponse(null, 400, 'Email exists'));
         return;
     }
 
@@ -23,13 +24,18 @@ export const signup = async (req: Request<{}, {}, SignupBody>, res: Response): P
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET as string);
 
     const { password, ...userWithoutPassword } = user;
-    res.json({
-        token,
-        user: {
-            ...userWithoutPassword,
-            groups: [],
-        },
-    });
+    res.status(200).json(
+        createResponse(
+            {
+                token,
+                user: {
+                    ...userWithoutPassword,
+                    groups: [],
+                },
+            },
+            200,
+        ),
+    );
 };
 
 export const login = async (req: Request<{}, {}, LoginBody>, res: Response): Promise<void> => {
@@ -38,13 +44,13 @@ export const login = async (req: Request<{}, {}, LoginBody>, res: Response): Pro
         where: { email },
     });
     if (!user) {
-        res.status(400).json({ message: 'Invalid credentials' });
+        res.status(400).json(createResponse(null, 400, 'Invalid credentials'));
         return;
     }
 
     const valid = await bcrypt.compare(req.body.password, user.password);
     if (!valid) {
-        res.status(400).json({ message: 'Invalid credentials' });
+        res.status(400).json(createResponse(null, 400, 'Invalid credentials'));
         return;
     }
 
@@ -57,11 +63,16 @@ export const login = async (req: Request<{}, {}, LoginBody>, res: Response): Pro
         },
     });
     const { password, ...userWithoutPassword } = user;
-    res.json({
-        token,
-        user: {
-            ...userWithoutPassword,
-            groups,
-        },
-    });
+    res.status(200).json(
+        createResponse(
+            {
+                token,
+                user: {
+                    ...userWithoutPassword,
+                    groups,
+                },
+            },
+            200,
+        ),
+    );
 };

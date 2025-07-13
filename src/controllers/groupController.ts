@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthenticatedRequest, CreateGroupBody, UpdateGroupBody } from '../interfaces';
 import { paginate } from '../utils';
+import { createResponse } from '../utils';
 
 const prisma = new PrismaClient();
 
@@ -10,7 +11,7 @@ export const createGroup = async (req: AuthenticatedRequest<CreateGroupBody>, re
     const creatorId = req.user?.userId;
 
     if (!id || !name || !creatorId) {
-        return res.status(400).json({ message: 'Missing required fields' });
+        return res.status(400).json(createResponse(null, 400, 'Missing required fields'));
     }
 
     try {
@@ -28,10 +29,10 @@ export const createGroup = async (req: AuthenticatedRequest<CreateGroupBody>, re
             },
         });
 
-        return res.status(201).json(group);
+        return res.status(201).json(createResponse(group, 201, 'Group created successfully'));
     } catch (error) {
         console.error('[Create Group]', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        return res.status(500).json(createResponse(null, 500, 'Internal server error'));
     }
 };
 
@@ -41,14 +42,14 @@ export const myGroups = async (req: AuthenticatedRequest, res: Response) => {
     const pageSize = parseInt(req.params.pageSize, 10);
 
     if (!userId) {
-        return res.status(400).json({ message: 'Missing user ID' });
+        return res.status(400).json(createResponse(null, 400, 'Missing user ID'));
     }
 
     if (isNaN(page) || page < 1) {
-        return res.status(400).json({ message: 'Invalid page parameter' });
+        return res.status(400).json(createResponse(null, 400, 'Invalid page parameter'));
     }
     if (isNaN(pageSize) || pageSize < 1 || pageSize > 100) {
-        return res.status(400).json({ message: 'Invalid pageSize parameter' });
+        return res.status(400).json(createResponse(null, 400, 'Invalid pageSize parameter'));
     }
 
     const result = await paginate(
@@ -96,17 +97,17 @@ export const myGroups = async (req: AuthenticatedRequest, res: Response) => {
         return rest;
     });
 
-    return res.json(result);
+    return res.json(createResponse(result, 200));
 };
 
 export const verifyGroupId = async (req: AuthenticatedRequest<{ id: string }>, res: Response) => {
     const group = await prisma.group.findUnique({ where: { id: req.body?.id.toLowerCase() } });
     if (!group) {
-        res.json({ message: 'ID is free' });
+        res.json(createResponse(null, 200, 'ID is free'));
         return;
     }
 
-    res.status(400).json({ message: 'ID is not free' });
+    res.status(400).json(createResponse(null, 400, 'ID is not free'));
 };
 
 export const updateGroup = async (req: AuthenticatedRequest<UpdateGroupBody>, res: Response) => {
@@ -116,7 +117,7 @@ export const updateGroup = async (req: AuthenticatedRequest<UpdateGroupBody>, re
     const { id: newGroupId, name, description, members } = req.body;
 
     if (!currentGroupId || !creatorId) {
-        return res.status(400).json({ message: 'Missing group ID or unauthorized' });
+        return res.status(400).json(createResponse(null, 400, 'Missing group ID or unauthorized'));
     }
 
     try {
@@ -125,7 +126,7 @@ export const updateGroup = async (req: AuthenticatedRequest<UpdateGroupBody>, re
         });
 
         if (!group || group.creatorId !== creatorId) {
-            return res.status(403).json({ message: 'Not authorized to update this group' });
+            return res.status(403).json(createResponse(null, 403, 'Not authorized to update this group'));
         }
 
         // If newGroupId is provided and different, check uniqueness
@@ -134,7 +135,7 @@ export const updateGroup = async (req: AuthenticatedRequest<UpdateGroupBody>, re
                 where: { id: newGroupId.toLowerCase() },
             });
             if (existing) {
-                return res.status(400).json({ message: 'New group ID is already taken' });
+                return res.status(400).json(createResponse(null, 400, 'New group ID is already taken'));
             }
         }
 
@@ -166,10 +167,10 @@ export const updateGroup = async (req: AuthenticatedRequest<UpdateGroupBody>, re
             },
         });
 
-        return res.status(200).json(updatedGroup);
+        return res.status(200).json(createResponse(updatedGroup, 200, 'Group updated successfully'));
     } catch (error) {
         console.error('[Update Group]', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        return res.status(500).json(createResponse(null, 500, 'Internal server error'));
     }
 };
 
@@ -177,7 +178,7 @@ export const deleteGroup = async (req: AuthenticatedRequest, res: Response) => {
     const creatorId = req.user?.userId;
     const groupId = req.params.id?.toLowerCase();
     if (!groupId || !creatorId) {
-        return res.status(400).json({ message: 'Missing group ID or unauthorized' });
+        return res.status(400).json(createResponse(null, 400, 'Missing group ID or unauthorized'));
     }
     try {
         const group = await prisma.group.findUnique({
@@ -185,17 +186,17 @@ export const deleteGroup = async (req: AuthenticatedRequest, res: Response) => {
         });
 
         if (!group || group.creatorId !== creatorId) {
-            return res.status(403).json({ message: 'Not authorized to update this group' });
+            return res.status(403).json(createResponse(null, 403, 'Not authorized to update this group'));
         }
 
         await prisma.group.delete({
             where: { id: groupId },
         });
 
-        return res.status(200).json({ message: 'Group deleted successfully' });
+        return res.status(200).json(createResponse(null, 200, 'Group deleted successfully'));
     } catch (error) {
         console.error('[Update Group]', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        return res.status(500).json(createResponse(null, 500, 'Internal server error'));
     }
 };
 
@@ -206,13 +207,13 @@ export const getGroupMessages = async (req: AuthenticatedRequest, res: Response)
         const pageSize = parseInt(req.params.pageSize, 10);
 
         if (!groupId) {
-            return res.status(400).json({ message: 'Missing groupId parameter' });
+            return res.status(400).json(createResponse(null, 400, 'Missing groupId parameter'));
         }
         if (isNaN(page) || page < 1) {
-            return res.status(400).json({ message: 'Invalid page parameter' });
+            return res.status(400).json(createResponse(null, 400, 'Invalid page parameter'));
         }
         if (isNaN(pageSize) || pageSize < 1 || pageSize > 100) {
-            return res.status(400).json({ message: 'Invalid pageSize parameter' });
+            return res.status(400).json(createResponse(null, 400, 'Invalid pageSize parameter'));
         }
         console.log({ page, pageSize });
         const result = await paginate(
@@ -228,9 +229,9 @@ export const getGroupMessages = async (req: AuthenticatedRequest, res: Response)
                 }),
         );
 
-        res.json(result);
+        res.json(createResponse(result, 200));
     } catch (error) {
         console.error('[Get Group Messages]', error);
-        res.status(500).json({ message: 'Internal server error' });
+        res.status(500).json(createResponse(null, 500, 'Internal server error'));
     }
 };

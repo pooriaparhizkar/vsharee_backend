@@ -6,7 +6,15 @@
  */
 
 import express from 'express';
-import { createGroup, deleteGroup, getGroupMessages, myGroups, updateGroup, verifyGroupId } from '../controllers';
+import {
+    createGroup,
+    deleteGroup,
+    getGroupMessages,
+    myGroups,
+    updateGroup,
+    verifyGroupId,
+    getGroups,
+} from '../controllers';
 import { authenticate } from '../middlewares/auth';
 
 const groupRoute = express.Router();
@@ -301,4 +309,56 @@ groupRoute.delete('/:id', authenticate, deleteGroup);
  *         description: Internal server error
  */
 groupRoute.get('/:id/messages/:page/:pageSize', authenticate, getGroupMessages);
+
+/**
+ * @swagger
+ * /api/group/{page}/{pageSize}:
+ *   get:
+ *     summary: Get all groups (paginated & sortable)
+ *     tags: [Group]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: page
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: path
+ *         name: pageSize
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *         description: Number of groups per page
+ *       - in: query
+ *         name: sortBy
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [members, createdAt]
+ *           default: members
+ *         description: Field to sort groups by
+ *       - in: query
+ *         name: sort
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
+ *         description: Sort direction
+ *     responses:
+ *       200:
+ *         description: Paginated list of groups
+ *       400:
+ *         description: Invalid query parameters
+ *       500:
+ *         description: Internal server error
+ */
+groupRoute.get('/:page/:pageSize', authenticate, getGroups);
 export default groupRoute;

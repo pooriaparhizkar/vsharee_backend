@@ -235,3 +235,61 @@ export const getGroupMessages = async (req: AuthenticatedRequest, res: Response)
         res.status(500).json(createResponse(null, 500, 'Internal server error'));
     }
 };
+
+export const getGroups = async (req: AuthenticatedRequest, res: Response) => {
+    const page = parseInt(req.params.page, 10);
+    const pageSize = parseInt(req.params.pageSize, 10);
+    const sortBy = (req.query.sortBy as string)?.toLowerCase() || 'createdat';
+    const sortDirection = (req.query.sort as string)?.toLowerCase() === 'asc' ? 'asc' : 'desc';
+
+    if (isNaN(page) || page < 1) {
+        return res.status(400).json(createResponse(null, 400, 'Invalid page parameter'));
+    }
+
+    if (isNaN(pageSize) || pageSize < 1 || pageSize > 100) {
+        return res.status(400).json(createResponse(null, 400, 'Invalid pageSize parameter'));
+    }
+
+    try {
+        const result = await paginate(
+            { page, pageSize },
+            () => prisma.group.count(),
+            async (skip, take) => {
+                const groups = await prisma.group.findMany({
+                    include: {
+                        creator: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
+                        members: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
+                    },
+                    skip,
+                    take,
+                    orderBy: sortBy === 'createdat' ? { createdAt: sortDirection } : undefined,
+                });
+
+                if (sortBy === 'members') {
+                    groups.sort((a, b) =>
+                        sortDirection === 'asc'
+                            ? a.members.length - b.members.length
+                            : b.members.length - a.members.length,
+                    );
+                }
+
+                return groups;
+            },
+        );
+
+        res.json(createResponse(result, 200));
+    } catch (error) {
+        console.error('[Get Groups]', error);
+        res.status(500).json(createResponse(null, 500, 'Internal server error'));
+    }
+};

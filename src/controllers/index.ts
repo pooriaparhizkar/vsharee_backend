@@ -1,5 +1,13 @@
 import { login, signup } from './authController';
-import { createGroup, deleteGroup, getGroupMessages, myGroups, updateGroup, verifyGroupId } from './groupController';
+import {
+    createGroup,
+    deleteGroup,
+    getGroupMessages,
+    getGroups,
+    myGroups,
+    updateGroup,
+    verifyGroupId,
+} from './groupController';
 import { myProfile, profileDetail, searchUsers } from './profileController';
 
 export {
@@ -14,4 +22,5 @@ export {
     updateGroup,
     deleteGroup,
     getGroupMessages,
+    getGroups,
 };

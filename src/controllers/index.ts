@@ -2,6 +2,7 @@ import { login, signup } from './authController';
 import {
     createGroup,
     deleteGroup,
+    getGroupDetail,
     getGroupMessages,
     getGroups,
     myGroups,
@@ -23,4 +24,5 @@ export {
     deleteGroup,
     getGroupMessages,
     getGroups,
+    getGroupDetail,
 };

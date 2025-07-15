@@ -215,7 +215,7 @@ export const getGroupMessages = async (req: AuthenticatedRequest, res: Response)
         if (isNaN(pageSize) || pageSize < 1 || pageSize > 100) {
             return res.status(400).json(createResponse(null, 400, 'Invalid pageSize parameter'));
         }
-        console.log({ page, pageSize });
+
         const result = await paginate(
             { page, pageSize },
             () => prisma.groupMessage.count({ where: { groupId } }),
@@ -291,5 +291,30 @@ export const getGroups = async (req: AuthenticatedRequest, res: Response) => {
     } catch (error) {
         console.error('[Get Groups]', error);
         res.status(500).json(createResponse(null, 500, 'Internal server error'));
+    }
+};
+
+export const getGroupDetail = async (req: AuthenticatedRequest, res: Response) => {
+    const userId = req.user?.userId;
+    const groupId = req.params.id?.toLowerCase();
+    if (!groupId) {
+        return res.status(400).json(createResponse(null, 400, 'Missing group ID'));
+    }
+    try {
+        const group = await prisma.group.findUnique({
+            where: { id: groupId },
+            include: {
+                members: true,
+            },
+        });
+
+        if (!group || !group.members.some((member) => member.id === userId)) {
+            return res.status(403).json(createResponse(null, 403, 'Not authorized to get this group detail'));
+        }
+
+        return res.status(200).json(createResponse(group, 200, ''));
+    } catch (error) {
+        console.error('[GET Group detail]', error);
+        return res.status(500).json(createResponse(null, 500, 'Internal server error'));
     }
 };

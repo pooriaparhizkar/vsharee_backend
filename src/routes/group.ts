@@ -14,6 +14,7 @@ import {
     updateGroup,
     verifyGroupId,
     getGroups,
+    getGroupDetail,
 } from '../controllers';
 import { authenticate } from '../middlewares/auth';
 
@@ -361,4 +362,29 @@ groupRoute.get('/:id/messages/:page/:pageSize', authenticate, getGroupMessages);
  *         description: Internal server error
  */
 groupRoute.get('/:page/:pageSize', authenticate, getGroups);
+
+/**
+ * @swagger
+ * /api/group/{id}:
+ *   get:
+ *     summary: get a group by ID
+ *     tags: [Group]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the group to get
+ *     responses:
+ *       200:
+ *         description: Get Group detail successfully
+ *       400:
+ *         description: Missing group ID or unauthorized
+ *       403:
+ *         description: Not authorized to get this group detail
+ */
+groupRoute.get('/:id', authenticate, getGroupDetail);
 export default groupRoute;

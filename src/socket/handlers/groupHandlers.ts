@@ -34,7 +34,7 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
                 .filter(Boolean);
 
             socket.emit('joinedGroup', { onlineMembers });
-            socket.to(groupId).emit('userJoined', { userId: user.id, name: user.name });
+            socket.to(groupId).emit('userJoined', { id: user.id, name: user.name });
         } catch (error) {
             console.error('Error in joinGroup:', error);
             socket.emit('error', { message: 'Internal server error in joinGroup' });
@@ -46,7 +46,7 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
             socket.leave(groupId);
             const joinedGroups = (socket as any).joinedGroups || [];
             (socket as any).joinedGroups = joinedGroups.filter((id: string) => id !== groupId);
-            socket.to(groupId).emit('userLeft', { userId: user.id, name: user.name });
+            socket.to(groupId).emit('userLeft', { id: user.id, name: user.name });
         } catch (error) {
             console.error('Error in leftGroup:', error);
             socket.emit('error', { message: 'Internal server error in leftGroup' });
@@ -91,7 +91,7 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
 
             for (const groupId of joinedGroups) {
                 socket.to(groupId).emit('userLeft', {
-                    userId: user.id,
+                    id: user.id,
                     name: user.name,
                 });
             }

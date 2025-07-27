@@ -1,8 +1,9 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { AuthenticatedRequest, CreateGroupBody, UpdateGroupBody } from '../interfaces';
+import { AuthenticatedRequest, CreateGroupBody, EditMemberBody, GroupMemberRole, UpdateGroupBody } from '../interfaces';
 import { paginate } from '../utils';
 import { createResponse } from '../utils';
+import { groupInclude, transformGroup, transformGroups } from '../transformers';
 
 const prisma = new PrismaClient();
 
@@ -15,21 +16,31 @@ export const createGroup = async (req: AuthenticatedRequest<CreateGroupBody>, re
     }
 
     try {
+        // Create the group
         const group = await prisma.group.create({
             data: {
                 id: id.toLocaleLowerCase(),
                 name,
                 description: description ?? '',
                 creatorId,
-                members: {
-                    connect: {
-                        id: creatorId,
-                    },
-                },
             },
         });
 
-        return res.status(201).json(createResponse(group, 201, 'Group created successfully'));
+        // Register the creator as a GroupMember
+        await prisma.groupMember.create({
+            data: {
+                groupId: group.id,
+                userId: creatorId,
+                role: 'CREATOR',
+            },
+        });
+
+        // Fetch the full group with includes and transform
+        const fullGroup = await prisma.group.findUnique({
+            where: { id: group.id },
+            include: groupInclude,
+        });
+        return res.status(201).json(createResponse(transformGroup(fullGroup), 201, 'Group created successfully'));
     } catch (error) {
         console.error('[Create Group]', error);
         return res.status(500).json(createResponse(null, 500, 'Internal server error'));
@@ -59,7 +70,7 @@ export const myGroups = async (req: AuthenticatedRequest, res: Response) => {
                 where: {
                     members: {
                         some: {
-                            id: userId,
+                            userId: userId,
                         },
                     },
                 },
@@ -69,33 +80,16 @@ export const myGroups = async (req: AuthenticatedRequest, res: Response) => {
                 where: {
                     members: {
                         some: {
-                            id: userId,
+                            userId: userId,
                         },
                     },
                 },
-                include: {
-                    creator: {
-                        select: {
-                            id: true,
-                            name: true,
-                        },
-                    },
-                    members: {
-                        select: {
-                            id: true,
-                            name: true,
-                        },
-                    },
-                },
+                include: groupInclude,
                 skip,
                 take,
             }),
+        transformGroups,
     );
-
-    result.data = result.data.map((group: any) => {
-        const { creatorId, ...rest } = group;
-        return rest;
-    });
 
     return res.json(createResponse(result, 200));
 };
@@ -114,7 +108,7 @@ export const updateGroup = async (req: AuthenticatedRequest<UpdateGroupBody>, re
     const creatorId = req.user?.userId;
     const currentGroupId = req.params.id?.toLowerCase();
     // id in body is the new id to update to
-    const { id: newGroupId, name, description, members } = req.body;
+    const { id: newGroupId, name, description } = req.body;
 
     if (!currentGroupId || !creatorId) {
         return res.status(400).json(createResponse(null, 400, 'Missing group ID or unauthorized'));
@@ -145,29 +139,11 @@ export const updateGroup = async (req: AuthenticatedRequest<UpdateGroupBody>, re
                 id: newGroupId?.toLowerCase() ?? undefined,
                 name: name ?? undefined,
                 description: description ?? undefined,
-                members: members
-                    ? {
-                          set: Array.from(new Set([...members, creatorId])).map((userId: string) => ({ id: userId })),
-                      }
-                    : undefined,
             },
-            include: {
-                creator: {
-                    select: {
-                        id: true,
-                        name: true,
-                    },
-                },
-                members: {
-                    select: {
-                        id: true,
-                        name: true,
-                    },
-                },
-            },
+            include: groupInclude,
         });
 
-        return res.status(200).json(createResponse(updatedGroup, 200, 'Group updated successfully'));
+        return res.status(200).json(createResponse(transformGroup(updatedGroup), 200, 'Group updated successfully'));
     } catch (error) {
         console.error('[Update Group]', error);
         return res.status(500).json(createResponse(null, 500, 'Internal server error'));
@@ -256,20 +232,7 @@ export const getGroups = async (req: AuthenticatedRequest, res: Response) => {
             () => prisma.group.count(),
             async (skip, take) => {
                 const groups = await prisma.group.findMany({
-                    include: {
-                        creator: {
-                            select: {
-                                id: true,
-                                name: true,
-                            },
-                        },
-                        members: {
-                            select: {
-                                id: true,
-                                name: true,
-                            },
-                        },
-                    },
+                    include: groupInclude,
                     skip,
                     take,
                     orderBy: sortBy === 'createdat' ? { createdAt: sortDirection } : undefined,
@@ -285,6 +248,7 @@ export const getGroups = async (req: AuthenticatedRequest, res: Response) => {
 
                 return groups;
             },
+            transformGroups,
         );
 
         res.json(createResponse(result, 200));
@@ -303,18 +267,132 @@ export const getGroupDetail = async (req: AuthenticatedRequest, res: Response) =
     try {
         const group = await prisma.group.findUnique({
             where: { id: groupId },
+            include: groupInclude,
+        });
+
+        if (!group || !group.members.some((member) => member.user.id === userId)) {
+            return res.status(403).json(createResponse(null, 403, 'Not authorized to get this group detail'));
+        }
+
+        return res.status(200).json(createResponse(transformGroup(group), 200, ''));
+    } catch (error) {
+        console.error('[GET Group detail]', error);
+        return res.status(500).json(createResponse(null, 500, 'Internal server error'));
+    }
+};
+
+export const editGroupMembers = async (req: AuthenticatedRequest<EditMemberBody[]>, res: Response) => {
+    const creatorId = req.user?.userId;
+    const newMembers = req.body;
+    const groupId = req.params.id?.toLowerCase();
+
+    if (!groupId || !creatorId) {
+        return res.status(400).json(createResponse(null, 400, 'Missing group ID or unauthorized'));
+    }
+
+    try {
+        const group = await prisma.group.findUnique({
+            where: { id: groupId },
             include: {
                 members: true,
             },
         });
 
-        if (!group || !group.members.some((member) => member.id === userId)) {
-            return res.status(403).json(createResponse(null, 403, 'Not authorized to get this group detail'));
+        if (!group || group.creatorId !== creatorId) {
+            return res.status(403).json(createResponse(null, 403, 'Not authorized to update this group'));
         }
 
-        return res.status(200).json(createResponse(group, 200, ''));
+        // Validate all roles against the enum
+        const validRoles = Object.values(GroupMemberRole);
+        const invalidRole = newMembers.find((m) => !validRoles.includes(m.role ?? GroupMemberRole.MEMBER));
+        if (invalidRole) {
+            return res
+                .status(400)
+                .json(
+                    createResponse(
+                        null,
+                        400,
+                        `Invalid role provided for user ${invalidRole.id}, valid options: ${validRoles.join(', ')}`,
+                    ),
+                );
+        }
+
+        // Ensure the creator is always in the new members list with CREATOR role
+        const creatorAlreadyIncluded = newMembers.some((m) => m.id === creatorId);
+        if (!creatorAlreadyIncluded) {
+            newMembers.push({ id: creatorId, role: GroupMemberRole.CREATOR });
+        } else {
+            // Enforce role as CREATOR if the creator is included with a different role
+            newMembers.forEach((m) => {
+                if (m.id === creatorId) {
+                    m.role = GroupMemberRole.CREATOR;
+                }
+            });
+        }
+
+        const currentMembers = group.members;
+
+        const newMemberMap = new Map(newMembers.map((m) => [m.id, m.role ?? GroupMemberRole.MEMBER]));
+        const currentMemberMap = new Map(currentMembers.map((m) => [m.userId, m.role]));
+
+        const toAdd: { userId: string; role: GroupMemberRole }[] = [];
+        const toUpdate: { userId: string; role: GroupMemberRole }[] = [];
+        const toDelete: string[] = [];
+
+        // Determine which members to add or update
+        for (const [userId, role] of newMemberMap.entries()) {
+            if (!currentMemberMap.has(userId)) {
+                toAdd.push({ userId, role });
+            } else if (currentMemberMap.get(userId) !== role) {
+                toUpdate.push({ userId, role });
+            }
+        }
+
+        // Determine which members to remove
+        for (const userId of currentMemberMap.keys()) {
+            if (!newMemberMap.has(userId)) {
+                toDelete.push(userId);
+            }
+        }
+
+        // Perform deletions
+        await prisma.groupMember.deleteMany({
+            where: {
+                groupId,
+                userId: { in: toDelete },
+            },
+        });
+
+        // Perform updates
+        for (const { userId, role } of toUpdate) {
+            await prisma.groupMember.update({
+                where: {
+                    groupId_userId: { groupId, userId },
+                },
+                data: { role },
+            });
+        }
+
+        // Perform additions
+        await prisma.groupMember.createMany({
+            data: toAdd.map(({ userId, role }) => ({
+                groupId,
+                userId,
+                role,
+            })),
+            skipDuplicates: true,
+        });
+
+        const updatedGroup = await prisma.group.findUnique({
+            where: { id: groupId },
+            include: groupInclude,
+        });
+
+        return res
+            .status(200)
+            .json(createResponse(transformGroup(updatedGroup), 200, 'Group members updated successfully'));
     } catch (error) {
-        console.error('[GET Group detail]', error);
+        console.error('[Edit Group Members]', error);
         return res.status(500).json(createResponse(null, 500, 'Internal server error'));
     }
 };

@@ -1,5 +1,48 @@
 /**
  * @swagger
+ * components:
+ *   schemas:
+ *     User:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           example: user123
+ *         name:
+ *           type: string
+ *           example: Alice
+ *         email:
+ *           type: string
+ *           example: user123@gmail.com
+ *     GroupMember:
+ *       type: object
+ *       properties:
+ *         role:
+ *           type: string
+ *           enum: [CREATOR, CONTROLLER, MEMBER]
+ *           example: MEMBER
+ *         user:
+ *           $ref: '#/components/schemas/User'
+ *     Group:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           example: group123
+ *         name:
+ *           type: string
+ *           example: My Group
+ *         description:
+ *           type: string
+ *           example: This is a sample group description.
+ *         members:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/GroupMember'
+ */
+
+/**
+ * @swagger
  * tags:
  *   name: Group
  *   description: Group Management
@@ -15,6 +58,7 @@ import {
     verifyGroupId,
     getGroups,
     getGroupDetail,
+    editGroupMembers,
 } from '../controllers';
 import { authenticate } from '../middlewares/auth';
 
@@ -181,10 +225,6 @@ groupRoute.post('/verify-id', authenticate, verifyGroupId);
  *                 type: string
  *               description:
  *                 type: string
- *               members:
- *                 type: array
- *                 items:
- *                   type: string
  *     responses:
  *       200:
  *         description: Group updated successfully
@@ -387,4 +427,41 @@ groupRoute.get('/:page/:pageSize', authenticate, getGroups);
  *         description: Not authorized to get this group detail
  */
 groupRoute.get('/:id', authenticate, getGroupDetail);
+
+/**
+ * @swagger
+ * /api/group/{id}/members:
+ *   put:
+ *     summary: Edit group members (creator only)
+ *     tags: [Group]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the group to edit members
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: array
+ *             items:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                   example: user123
+ *                 role:
+ *                   type: string
+ *                   enum: [CREATOR, CONTROLLER, MEMBER]
+ *                   example: MEMBER
+ *     responses:
+ *       200:
+ *         description: Group members updated successfully
+ */
+groupRoute.put('/:id/members', authenticate, editGroupMembers);
 export default groupRoute;

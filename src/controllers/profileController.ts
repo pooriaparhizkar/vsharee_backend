@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { AuthenticatedRequest } from '../interfaces';
 import { paginate } from '../utils';
 import { createResponse } from '../utils';
+import { groupInclude, transformGroups } from '../transformers';
 
 const prisma = new PrismaClient();
 
@@ -14,13 +15,14 @@ export const myProfile = async (req: AuthenticatedRequest, res: Response): Promi
         const groups = await prisma.group.findMany({
             where: {
                 members: {
-                    some: { id: req.user?.userId },
+                    some: { userId: req.user?.userId },
                 },
             },
+            include: groupInclude,
         });
 
         if (!user) {
-            res.status(404).json(createResponse(null, 404, 'User not found22222'));
+            res.status(404).json(createResponse(null, 404, 'User not found'));
             return;
         }
         const { password, ...userWithoutPassword } = user;
@@ -29,7 +31,7 @@ export const myProfile = async (req: AuthenticatedRequest, res: Response): Promi
                 {
                     user: {
                         ...userWithoutPassword,
-                        groups,
+                        groups: transformGroups(groups),
                     },
                 },
                 200,
@@ -105,9 +107,10 @@ export const profileDetail = async (req: AuthenticatedRequest, res: Response): P
         const groups = await prisma.group.findMany({
             where: {
                 members: {
-                    some: { id: userId },
+                    some: { userId: userId },
                 },
             },
+            include: groupInclude,
         });
 
         if (!user) {
@@ -120,7 +123,7 @@ export const profileDetail = async (req: AuthenticatedRequest, res: Response): P
             createResponse(
                 {
                     ...userWithoutPassword,
-                    groups,
+                    groups: transformGroups(groups),
                 },
                 200,
             ),

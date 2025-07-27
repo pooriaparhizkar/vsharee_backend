@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import { LoginBody, SignupBody } from '../interfaces';
 import { createResponse } from '../utils';
+import { groupInclude, transformGroups } from '../transformers';
 
 const prisma = new PrismaClient();
 
@@ -55,12 +56,17 @@ export const login = async (req: Request<{}, {}, LoginBody>, res: Response): Pro
     }
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET as string);
+
     const groups = await prisma.group.findMany({
         where: {
             members: {
-                some: { id: user.id },
+                some: {
+                    userId: user.id,
+                },
             },
         },
+
+        include: groupInclude,
     });
     const { password, ...userWithoutPassword } = user;
     res.status(200).json(
@@ -69,7 +75,7 @@ export const login = async (req: Request<{}, {}, LoginBody>, res: Response): Pro
                 token,
                 user: {
                     ...userWithoutPassword,
-                    groups,
+                    groups: transformGroups(groups),
                 },
             },
             200,

@@ -16,7 +16,7 @@ model User {
   createdAt     DateTime       @default(now())
 
   createdGroups Group[]        @relation("CreatedGroups")
-  memberGroups  Group[]        @relation("GroupMembers")
+  memberGroups  GroupMember[]
 
   sentMessages  GroupMessage[] @relation("UserSentMessages")
 }
@@ -28,10 +28,24 @@ model Group {
   createdAt   DateTime       @default(now())
   creatorId   String
   creator     User           @relation("CreatedGroups", fields: [creatorId], references: [id])
-
-  members     User[]         @relation("GroupMembers")
-
+  members     GroupMember[]
   messages    GroupMessage[] @relation("GroupMessages")
+}
+
+model GroupMember {
+  group   Group  @relation(fields: [groupId], references: [id])
+  groupId String
+  user    User   @relation(fields: [userId], references: [id])
+  userId  String
+  role    Role   @default(MEMBER)
+
+  @@id([groupId, userId])
+}
+
+enum Role {
+  CREATOR
+  CONTROLLER
+  MEMBER
 }
 
 model GroupMessage {

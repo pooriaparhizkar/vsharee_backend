@@ -15,7 +15,7 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
 
             if (!group) return socket.emit('error', { message: 'Group not found' });
 
-            const isMember = group.members.some((m) => m.id === user.id);
+            const isMember = group.members.some((m) => m.userId === user.id);
             if (!isMember) return socket.emit('error', { message: 'Not a member' });
 
             socket.join(groupId);

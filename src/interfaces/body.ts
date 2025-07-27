@@ -15,6 +15,16 @@ export interface __CreateGroupBody {
     description?: string;
 }
 
+export enum __GroupMemberRole {
+    CREATOR = 'CREATOR',
+    CONTROLLER = 'CONTROLLER',
+    MEMBER = 'MEMBER',
+}
+export interface __EditMemberBody {
+    id: string;
+    role?: __GroupMemberRole;
+}
+
 export interface __UpdateGroupBody {
     id: string;
     name?: string;

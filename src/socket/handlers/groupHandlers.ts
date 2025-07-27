@@ -108,4 +108,43 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
             console.error('Error in heartbeat:', error);
         }
     });
+    // Video selection event
+    socket.on('videoSelected', ({ groupId, videoData, user }) => {
+        try {
+            io.to(groupId).emit('videoStream', { videoData, user });
+        } catch (error) {
+            console.error('Error in videoSelected:', error);
+            socket.emit('error', { message: 'Internal server error in videoSelected' });
+        }
+    });
+
+    // WebRTC video offer
+    socket.on('videoOffer', ({ offer, groupId }) => {
+        try {
+            socket.to(groupId).emit('videoOffer', { offer });
+        } catch (error) {
+            console.error('Error in videoOffer:', error);
+            socket.emit('error', { message: 'Internal server error in videoOffer' });
+        }
+    });
+
+    // WebRTC video answer
+    socket.on('videoAnswer', ({ answer, groupId }) => {
+        try {
+            socket.to(groupId).emit('videoAnswer', { answer });
+        } catch (error) {
+            console.error('Error in videoAnswer:', error);
+            socket.emit('error', { message: 'Internal server error in videoAnswer' });
+        }
+    });
+
+    // ICE candidate relay
+    socket.on('iceCandidate', ({ candidate, groupId }) => {
+        try {
+            socket.to(groupId).emit('iceCandidate', { candidate });
+        } catch (error) {
+            console.error('Error in iceCandidate:', error);
+            socket.emit('error', { message: 'Internal server error in iceCandidate' });
+        }
+    });
 }

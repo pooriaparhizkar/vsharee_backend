@@ -1,5 +1,6 @@
 import { Socket, Server } from 'socket.io';
 import { PrismaClient } from '@prisma/client';
+import { GroupMemberRole } from '../../interfaces';
 
 const prisma = new PrismaClient();
 
@@ -72,10 +73,11 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
         }
     });
 
-    socket.on('videoControl', ({ groupId, action }) => {
+    socket.on('videoControl', ({ groupId, action, time }) => {
         try {
             io.to(groupId).emit('syncVideo', {
-                ...action,
+                action,
+                time,
                 user: { id: user.id, name: user.name },
             });
         } catch (error) {
@@ -108,15 +110,6 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
             console.error('Error in heartbeat:', error);
         }
     });
-    // Video selection event
-    socket.on('videoSelected', ({ groupId, videoData, user }) => {
-        try {
-            io.to(groupId).emit('videoStream', { videoData, user });
-        } catch (error) {
-            console.error('Error in videoSelected:', error);
-            socket.emit('error', { message: 'Internal server error in videoSelected' });
-        }
-    });
 
     // WebRTC video offer
     socket.on('videoOffer', ({ offer, groupId }) => {
@@ -145,6 +138,47 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
         } catch (error) {
             console.error('Error in iceCandidate:', error);
             socket.emit('error', { message: 'Internal server error in iceCandidate' });
+        }
+    });
+
+    socket.on('methodSelected', async ({ groupId, method }) => {
+        console.log({ groupId }, { method });
+        try {
+            const group = await prisma.group.findUnique({
+                where: { id: groupId },
+                include: { members: true },
+            });
+            if (!group) return socket.emit('error', { message: 'Group not found' });
+            console.log({ group });
+            const member = group.members.find((m) => m.userId === user.id);
+            if (!member) return socket.emit('error', { message: 'Not a member' });
+            console.log({ member });
+            if (![GroupMemberRole.CREATOR, GroupMemberRole.CONTROLLER].includes(member.role as GroupMemberRole))
+                return socket.emit('error', { message: 'Not qualified to chose method' });
+            console.log({ method });
+            io.to(groupId).emit('methodSelected', { method });
+        } catch (error) {
+            console.error('Error in videoSelected:', error);
+            socket.emit('error', { message: 'Internal server error in videoSelected' });
+        }
+    });
+
+    socket.on('sendVideoUrl', async ({ groupId, url }) => {
+        try {
+            const group = await prisma.group.findUnique({
+                where: { id: groupId },
+                include: { members: true },
+            });
+
+            if (!group) return socket.emit('error', { message: 'Group not found' });
+
+            const isMember = group.members.some((m) => m.userId === user.id);
+            if (!isMember) return socket.emit('error', { message: 'Not a member' });
+
+            io.to(groupId).emit('receiveVideoUrl', { url });
+        } catch (error) {
+            console.error('Error in send-video-url:', error);
+            socket.emit('error', { message: 'Internal server error in send-video-url' });
         }
     });
 }

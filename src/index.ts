@@ -6,6 +6,9 @@ import swaggerSpec from './config/swagger';
 import { authRoutes, groupRoutes, profileRoutes } from './routes';
 import { createServer } from 'http';
 import { setupSocket } from './socket';
+import fs from 'fs';
+import path from 'path';
+import https from 'https';
 
 dotenv.config();
 
@@ -25,7 +28,13 @@ app.use('/api/group', groupRoutes);
 
 app.get('/', (req, res) => res.send('vSharee backend is running!'));
 
-const server = createServer(app);
+// Read SSL certificate and key
+const sslOptions = {
+    key: fs.readFileSync(path.resolve(__dirname, '../certs/localhost-key.pem')),
+    cert: fs.readFileSync(path.resolve(__dirname, '../certs/localhost.pem')),
+};
+
+const server = https.createServer(sslOptions, app);
 setupSocket(server); // 👉 Socket.io initialized
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`Server listening on port 8000`));

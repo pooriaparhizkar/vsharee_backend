@@ -142,20 +142,16 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
     });
 
     socket.on('methodSelected', async ({ groupId, method }) => {
-        console.log({ groupId }, { method });
         try {
             const group = await prisma.group.findUnique({
                 where: { id: groupId },
                 include: { members: true },
             });
             if (!group) return socket.emit('error', { message: 'Group not found' });
-            console.log({ group });
             const member = group.members.find((m) => m.userId === user.id);
             if (!member) return socket.emit('error', { message: 'Not a member' });
-            console.log({ member });
             if (![GroupMemberRole.CREATOR, GroupMemberRole.CONTROLLER].includes(member.role as GroupMemberRole))
                 return socket.emit('error', { message: 'Not qualified to chose method' });
-            console.log({ method });
             io.to(groupId).emit('methodSelected', { method });
         } catch (error) {
             console.error('Error in videoSelected:', error);

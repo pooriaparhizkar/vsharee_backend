@@ -30,6 +30,7 @@ model Group {
   creator     User           @relation("CreatedGroups", fields: [creatorId], references: [id])
   members     GroupMember[]
   messages    GroupMessage[] @relation("GroupMessages")
+  isIdle      Boolean        @default(true)
 }
 
 model GroupMember {

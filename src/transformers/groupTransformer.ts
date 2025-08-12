@@ -33,6 +33,7 @@ export function transformGroup(group: any) {
             role: member.role,
             user: member.user,
         })),
+        isIdle: group.isIdle,
     };
 }
 

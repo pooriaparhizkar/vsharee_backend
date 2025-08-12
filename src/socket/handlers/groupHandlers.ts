@@ -196,4 +196,22 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
             socket.emit('error', { message: 'Internal server error in sendVideoFileHash' });
         }
     });
+
+    socket.on('restartContent', async ({ groupId }) => {
+        try {
+            const group = await prisma.group.findUnique({
+                where: { id: groupId },
+                include: { members: true },
+            });
+
+            if (!group) return socket.emit('error', { message: 'Group not found' });
+
+            const isMember = group.members.some((m) => m.userId === user.id);
+            if (!isMember) return socket.emit('error', { message: 'Not a member' });
+            io.to(groupId).emit('contentReset');
+        } catch (error) {
+            console.error('Error in restartContent:', error);
+            socket.emit('error', { message: 'Internal server error in restartContent' });
+        }
+    });
 }

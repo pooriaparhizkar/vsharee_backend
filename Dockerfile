@@ -5,10 +5,10 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
+COPY . .
+
 # Generate Prisma client after deps are installed
 RUN npx prisma generate
-
-COPY . .
 
 RUN npm run build
 

@@ -1,6 +1,5 @@
 import { Prisma } from '@prisma/client';
 
-// Define the include object with a const assertion, and derive the payload type via GroupGetPayload.
 export const groupInclude = {
     creator: {
         select: {
@@ -22,18 +21,15 @@ export const groupInclude = {
             },
         },
     },
-} as const;
+} satisfies Prisma.GroupInclude;
 
-// Infer the precise result type for a group returned with the above include
-export type GroupWith = Prisma.GroupGetPayload<{ include: typeof groupInclude }>;
-
-export function transformGroup(group: GroupWith) {
+export function transformGroup(group: any) {
     return {
         id: group.id,
         name: group.name,
         description: group.description,
         createdAt: group.createdAt,
-        members: group.members.map((member) => ({
+        members: group.members.map((member: any) => ({
             role: member.role,
             user: member.user,
         })),
@@ -41,6 +37,6 @@ export function transformGroup(group: GroupWith) {
     };
 }
 
-export function transformGroups(groups: GroupWith[]) {
+export function transformGroups(groups: any[]) {
     return groups.map(transformGroup);
 }

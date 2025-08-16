@@ -25,20 +25,21 @@ jobs:
                   SSH_USER: ${{ secrets.SSH_USER }}
                   APP_DIR: ${{ secrets.APP_DIR }} # e.g. /opt/vsharee
               run: |
-                  ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/id_ed25519 ${SSH_USER}@${SSH_HOST} << 'EOF'
+                  # Pass env vars into the remote shell BEFORE the heredoc, keep heredoc quoted
+                  ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -i ~/.ssh/id_ed25519 \
+                    "${SSH_USER}@${SSH_HOST}" \
+                    "APP_DIR='${APP_DIR}' bash -se" << 'EOF'
                   set -euo pipefail
 
-                  # Pull latest backend code on the server
-                  cd ${APP_DIR}/vsharee_backend
+                  cd "${APP_DIR}/vsharee_backend"
                   git fetch --all
                   git checkout production || git checkout -b production
                   git reset --hard origin/production
 
-                  # Rebuild and restart only the backend service
-                  cd ${APP_DIR}
+                  cd "${APP_DIR}"
                   docker compose build backend
                   docker compose up -d --no-deps backend
 
-                  # Reload Caddy (just in case)
+                  # reload caddy just in case (won't hurt)
                   docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile || true
                   EOF

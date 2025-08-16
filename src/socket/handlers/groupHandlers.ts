@@ -1,5 +1,5 @@
 import { Socket, Server } from 'socket.io';
-import { PrismaClient, GroupMember } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { GroupMemberRole } from '../../interfaces';
 
 const prisma = new PrismaClient();
@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 export default function registerGroupHandlers(io: Server, socket: Socket) {
     const user = (socket as any).user;
 
-    socket.on('joinGroup', async ({ groupId }: { groupId: string }) => {
+    socket.on('joinGroup', async ({ groupId }) => {
         try {
             const group = await prisma.group.findUnique({
                 where: { id: groupId },
@@ -16,7 +16,7 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
 
             if (!group) return socket.emit('error', { message: 'Group not found' });
 
-            const isMember = group.members.some((m: GroupMember) => m.userId === (user.id as string));
+            const isMember = group.members.some((m) => m.userId === user.id);
             if (!isMember) return socket.emit('error', { message: 'Not a member' });
 
             socket.join(groupId);
@@ -29,10 +29,10 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
             const onlineSockets = await io.in(groupId).fetchSockets();
             const onlineMembers = onlineSockets
                 .map((s) => ({
-                    id: (s as any).user?.id as string | undefined,
-                    name: (s as any).user?.name as string | undefined,
+                    id: (s as any).user?.id,
+                    name: (s as any).user?.name,
                 }))
-                .filter((m): m is { id: string; name: string } => Boolean(m.id && m.name));
+                .filter(Boolean);
 
             socket.emit('joinedGroup', { onlineMembers });
             socket.to(groupId).emit('userJoined', { id: user.id, name: user.name });
@@ -42,17 +42,14 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
         }
     });
 
-    socket.on('leftGroup', async ({ groupId }: { groupId: string }) => {
+    socket.on('leftGroup', async ({ groupId }) => {
         try {
             socket.leave(groupId);
-            const joinedGroups: string[] = (socket as any).joinedGroups || [];
+            const joinedGroups = (socket as any).joinedGroups || [];
             (socket as any).joinedGroups = joinedGroups.filter((id: string) => id !== groupId);
             socket.to(groupId).emit('userLeft', { id: user.id, name: user.name });
             const onlineSockets = await io.in(groupId).fetchSockets();
-            const onlineMembers = onlineSockets.map((s) => (s as any).user).filter(Boolean) as {
-                id: string;
-                name?: string;
-            }[];
+            const onlineMembers = onlineSockets.map((s) => (s as any).user).filter(Boolean);
             const group = await prisma.group.findUnique({
                 where: { id: groupId },
                 include: { members: true },
@@ -60,10 +57,10 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
             if (!group) return socket.emit('error', { message: 'Group not found' });
             const onlineMembersData = onlineMembers.map((onlineMember) => ({
                 ...onlineMember,
-                role: group?.members.find((groupMember: GroupMember) => groupMember.userId === onlineMember.id)?.role,
+                role: group?.members.find((groupMember) => groupMember.userId === onlineMember.id)?.role,
             }));
             const isQualifiedMemberExist = onlineMembersData.some((onlineMember) =>
-                [GroupMemberRole.CREATOR, GroupMemberRole.CONTROLLER].includes(onlineMember.role as GroupMemberRole),
+                [GroupMemberRole.CREATOR, GroupMemberRole.CONTROLLER].includes(onlineMember.role),
             );
             if (!isQualifiedMemberExist) {
                 io.to(groupId).emit('contentReset');
@@ -78,7 +75,7 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
         }
     });
 
-    socket.on('sendMessage', async ({ groupId, message }: { groupId: string; message: string }) => {
+    socket.on('sendMessage', async ({ groupId, message }) => {
         try {
             io.to(groupId).emit('newMessage', {
                 message,
@@ -97,7 +94,7 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
         }
     });
 
-    socket.on('videoControl', ({ groupId, action, time }: { groupId: string; action: string; time: number }) => {
+    socket.on('videoControl', ({ groupId, action, time }) => {
         try {
             io.to(groupId).emit('syncVideo', {
                 action,
@@ -113,7 +110,7 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
     socket.on('disconnect', () => {
         try {
             const user = (socket as any).user;
-            const joinedGroups: string[] = (socket as any).joinedGroups || [];
+            const joinedGroups = (socket as any).joinedGroups || [];
 
             for (const groupId of joinedGroups) {
                 socket.to(groupId).emit('userLeft', {
@@ -136,7 +133,7 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
     });
 
     // WebRTC video offer
-    socket.on('videoOffer', ({ offer, groupId }: { offer: any; groupId: string }) => {
+    socket.on('videoOffer', ({ offer, groupId }) => {
         try {
             socket.to(groupId).emit('videoOffer', { offer });
         } catch (error) {
@@ -146,7 +143,7 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
     });
 
     // WebRTC video answer
-    socket.on('videoAnswer', ({ answer, groupId }: { answer: any; groupId: string }) => {
+    socket.on('videoAnswer', ({ answer, groupId }) => {
         try {
             socket.to(groupId).emit('videoAnswer', { answer });
         } catch (error) {
@@ -156,7 +153,7 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
     });
 
     // ICE candidate relay
-    socket.on('iceCandidate', ({ candidate, groupId }: { candidate: any; groupId: string }) => {
+    socket.on('iceCandidate', ({ candidate, groupId }) => {
         try {
             socket.to(groupId).emit('iceCandidate', { candidate });
         } catch (error) {
@@ -165,14 +162,14 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
         }
     });
 
-    socket.on('methodSelected', async ({ groupId, method }: { groupId: string; method: string }) => {
+    socket.on('methodSelected', async ({ groupId, method }) => {
         try {
             const group = await prisma.group.findUnique({
                 where: { id: groupId },
                 include: { members: true },
             });
             if (!group) return socket.emit('error', { message: 'Group not found' });
-            const member = group.members.find((m: GroupMember) => m.userId === (user.id as string));
+            const member = group.members.find((m) => m.userId === user.id);
             if (!member) return socket.emit('error', { message: 'Not a member' });
             if (![GroupMemberRole.CREATOR, GroupMemberRole.CONTROLLER].includes(member.role as GroupMemberRole))
                 return socket.emit('error', { message: 'Not qualified to chose method' });
@@ -187,7 +184,7 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
         }
     });
 
-    socket.on('sendVideoUrl', async ({ groupId, url }: { groupId: string; url: string }) => {
+    socket.on('sendVideoUrl', async ({ groupId, url }) => {
         try {
             const group = await prisma.group.findUnique({
                 where: { id: groupId },
@@ -196,7 +193,7 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
 
             if (!group) return socket.emit('error', { message: 'Group not found' });
 
-            const isMember = group.members.some((m: GroupMember) => m.userId === (user.id as string));
+            const isMember = group.members.some((m) => m.userId === user.id);
             if (!isMember) return socket.emit('error', { message: 'Not a member' });
 
             io.to(groupId).emit('receiveVideoUrl', { url });
@@ -206,7 +203,7 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
         }
     });
 
-    socket.on('sendVideoFileHash', async ({ groupId, hash, name }: { groupId: string; hash: string; name: string }) => {
+    socket.on('sendVideoFileHash', async ({ groupId, hash, name }) => {
         try {
             const group = await prisma.group.findUnique({
                 where: { id: groupId },
@@ -215,7 +212,7 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
 
             if (!group) return socket.emit('error', { message: 'Group not found' });
 
-            const isMember = group.members.some((m: GroupMember) => m.userId === (user.id as string));
+            const isMember = group.members.some((m) => m.userId === user.id);
             if (!isMember) return socket.emit('error', { message: 'Not a member' });
 
             io.to(groupId).emit('receiveVideoFileHash', { hash, name });
@@ -225,7 +222,7 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
         }
     });
 
-    socket.on('restartContent', async ({ groupId }: { groupId: string }) => {
+    socket.on('restartContent', async ({ groupId }) => {
         try {
             const group = await prisma.group.findUnique({
                 where: { id: groupId },
@@ -234,7 +231,7 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
 
             if (!group) return socket.emit('error', { message: 'Group not found' });
 
-            const isMember = group.members.some((m: GroupMember) => m.userId === (user.id as string));
+            const isMember = group.members.some((m) => m.userId === user.id);
             if (!isMember) return socket.emit('error', { message: 'Not a member' });
             io.to(groupId).emit('contentReset');
             await prisma.group.update({

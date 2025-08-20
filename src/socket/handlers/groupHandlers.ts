@@ -1,6 +1,7 @@
 import { Socket, Server } from 'socket.io';
 import { PrismaClient } from '@prisma/client';
 import { GroupMemberRole } from '../../interfaces';
+import { createLiveKitToken } from '../livekitToken';
 
 const prisma = new PrismaClient();
 
@@ -34,7 +35,24 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
                 }))
                 .filter(Boolean);
 
-            socket.emit('joinedGroup', { onlineMembers });
+            const member = group.members.find((m) => m.userId === user.id);
+            const canPublish = [GroupMemberRole.CREATOR, GroupMemberRole.CONTROLLER].includes(
+                member?.role as GroupMemberRole,
+            );
+
+            const lkToken = await createLiveKitToken({
+                roomName: groupId, // map group -> livekit room
+                userId: user.id,
+                userName: user.name,
+                canPublish,
+            });
+
+            socket.emit('joinedGroup', {
+                onlineMembers,
+                lkToken,
+                lkUrl: process.env.LIVEKIT_URL, // optional: send URL to the client
+            });
+
             socket.to(groupId).emit('userJoined', { id: user.id, name: user.name });
         } catch (error) {
             console.error('Error in joinGroup:', error);

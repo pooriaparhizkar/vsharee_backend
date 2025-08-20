@@ -12,6 +12,11 @@ services:
             - '5432:5432'
         volumes:
             - db_data:/var/lib/postgresql/data
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB} -h localhost']
+            interval: 5s
+            timeout: 3s
+            retries: 20
 
     backend:
         container_name: vsharee-backend
@@ -23,11 +28,23 @@ services:
             - '8000:5000'
         volumes:
             - .:/app
-            - /app/node_modules
         environment:
             - NODE_ENV=development
+            - DATABASE_URL=postgresql://postgres:postgres@db:5432/vsharee?schema=public
         depends_on:
-            - db
+            db:
+                condition: service_healthy
+        # Run migrations (or push) before starting the dev server
+        command: sh -lc "npx prisma migrate deploy || npx prisma db push; exec npm run dev"
 
+    livekit:
+        image: livekit/livekit-server:latest
+        container_name: vsharee-livekit
+        command: ['--dev', '--bind', '0.0.0.0']
+        # Dev mode exposes default keys: api_key=devkey, api_secret=secret
+        ports:
+            - '7880:7880' # signaling (WebSocket)
+            - '7881:7881' # ICE/TCP fallback
+        restart: unless-stopped
 volumes:
     db_data:

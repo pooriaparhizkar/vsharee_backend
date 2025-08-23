@@ -53,7 +53,7 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
                 lkUrl: process.env.LIVEKIT_URL, // optional: send URL to the client
             });
 
-            socket.to(groupId).emit('userJoined', { id: user.id, name: user.name });
+            io.to(groupId).emit('userJoined', { id: user.id, name: user.name });
         } catch (error) {
             console.error('Error in joinGroup:', error);
             socket.emit('error', { message: 'Internal server error in joinGroup' });
@@ -65,7 +65,7 @@ export default function registerGroupHandlers(io: Server, socket: Socket) {
             socket.leave(groupId);
             const joinedGroups = (socket as any).joinedGroups || [];
             (socket as any).joinedGroups = joinedGroups.filter((id: string) => id !== groupId);
-            socket.to(groupId).emit('userLeft', { id: user.id, name: user.name });
+            io.to(groupId).emit('userLeft', { id: user.id, name: user.name });
             const onlineSockets = await io.in(groupId).fetchSockets();
             const onlineMembers = onlineSockets.map((s) => (s as any).user).filter(Boolean);
             const group = await prisma.group.findUnique({
